@@ -16,12 +16,16 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
 
+    console.log('Attempting login with email:', email);
+
     const { error } = await signIn(email, password);
 
     if (error) {
+      console.error('Login error:', error);
       setError(error.message || 'Failed to sign in');
       setLoading(false);
     } else {
+      console.log('Login successful, redirecting to admin...');
       navigate('/admin');
     }
   };
