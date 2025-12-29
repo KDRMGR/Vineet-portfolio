@@ -41,39 +41,39 @@ const photographyCategories = [
 
 export default function Photography() {
   return (
-    <section id="photography" className="min-h-screen bg-white text-black py-32 px-4 md:px-8">
+    <section id="photography" className="min-h-screen bg-background-white py-30 md:py-34 px-6 md:px-10">
       <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-20">
-          <h2 className="text-6xl md:text-8xl font-bold uppercase tracking-[0.3em] mb-8">
+        <div className="text-center mb-22 md:mb-26">
+          <h2 className="font-display text-5xl md:text-7xl lg:text-8xl font-bold tracking-wide mb-6 md:mb-8 text-primary">
             My Projects
           </h2>
-          <p className="text-xl uppercase tracking-[0.2em] text-gray-600">
+          <p className="font-sans text-lg md:text-xl tracking-wide text-text-secondary font-light">
             Click on respective categories to navigate
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
           {photographyCategories.map((category, index) => {
             const IconComponent = category.icon;
             return (
               <Link
                 key={index}
                 to={`/gallery/${category.slug}`}
-                className="group relative overflow-hidden cursor-pointer"
+                className="group relative overflow-hidden cursor-pointer transition-slow"
               >
-                <div className="aspect-[4/3] relative overflow-hidden">
+                <div className="aspect-[4/3] relative overflow-hidden rounded-sm">
                   <img
                     src={category.image}
                     alt={category.name}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    className="w-full h-full object-cover transition-slow group-hover:scale-105"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
-                    <div className="absolute bottom-0 left-0 right-0 p-6 transform transition-transform duration-300 group-hover:translate-y-0">
-                      <IconComponent className="w-12 h-12 text-[#ff8c42] mb-4" />
-                      <h3 className="text-2xl font-bold uppercase tracking-wider text-white mb-2">
+                  <div className="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/50 to-transparent">
+                    <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 transform transition-slow">
+                      <IconComponent className="w-10 h-10 md:w-12 md:h-12 text-accent mb-4 transition-slow group-hover:text-accent-light" />
+                      <h3 className="font-display text-xl md:text-2xl font-semibold tracking-wide text-white mb-2">
                         {category.name}
                       </h3>
-                      <p className="text-sm text-gray-300 tracking-wide opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <p className="font-sans text-sm text-gray-200 tracking-wide opacity-0 group-hover:opacity-100 transition-slow">
                         {category.description}
                       </p>
                     </div>
@@ -84,10 +84,10 @@ export default function Photography() {
           })}
         </div>
 
-        <div className="mt-20 text-center">
-          <div className="inline-flex items-center gap-4 border-2 border-black px-8 py-4">
-            <Camera className="w-10 h-10" />
-            <span className="text-2xl font-bold uppercase tracking-wider">
+        <div className="mt-22 md:mt-26 text-center">
+          <div className="inline-flex items-center gap-4 px-10 py-5">
+            <Camera className="w-8 h-8 md:w-10 md:h-10 text-accent" />
+            <span className="font-display text-xl md:text-2xl font-semibold tracking-wide text-primary">
               Professional Photography Services
             </span>
           </div>

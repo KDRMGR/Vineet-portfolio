@@ -41,19 +41,19 @@ export default function Navigation() {
   return (
     <>
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          isScrolled ? 'bg-black/95 backdrop-blur-sm py-4' : 'bg-transparent py-6'
+        className={`fixed top-0 left-0 right-0 z-50 transition-slow ${
+          isScrolled ? 'bg-background-white/95 backdrop-blur-md py-4 shadow-sm' : 'bg-background-white/80 backdrop-blur-sm py-6'
         }`}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8">
           {/* Desktop Navigation */}
-          <ul className="hidden md:flex items-center justify-center space-x-6 lg:space-x-12">
+          <ul className="hidden md:flex items-center justify-center space-x-8 lg:space-x-12">
             {navLinks.map((link) => (
               <li key={link.name}>
                 <Link
                   to={link.href}
-                  className={`text-sm lg:text-base uppercase tracking-[0.2em] hover:text-[#ff8c42] transition-colors duration-300 font-light ${
-                    location.pathname === link.href ? 'text-[#ff8c42]' : 'text-white'
+                  className={`font-sans text-sm lg:text-base uppercase tracking-extra-wide hover:text-accent transition-slow font-medium ${
+                    location.pathname === link.href ? 'text-accent' : 'text-text-primary'
                   }`}
                 >
                   {link.name}
@@ -64,12 +64,12 @@ export default function Navigation() {
 
           {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center justify-between">
-            <Link to="/" className="text-[#ff8c42] font-bold text-xl uppercase tracking-wider">
+            <Link to="/" className="font-display text-accent font-bold text-xl uppercase tracking-wider">
               VL
             </Link>
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="text-white hover:text-[#ff8c42] transition-colors"
+              className="text-primary hover:text-accent transition-smooth"
               aria-label="Toggle menu"
             >
               {isMobileMenuOpen ? <X className="w-7 h-7" /> : <Menu className="w-7 h-7" />}
@@ -80,18 +80,18 @@ export default function Navigation() {
 
       {/* Mobile Menu Overlay */}
       <div
-        className={`fixed inset-0 bg-black/95 backdrop-blur-sm z-40 md:hidden transition-all duration-300 ${
+        className={`fixed inset-0 bg-background-white/98 backdrop-blur-md z-40 md:hidden transition-slow ${
           isMobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
         }`}
         style={{ top: isScrolled ? '64px' : '80px' }}
       >
-        <div className="flex flex-col items-center justify-center h-full space-y-8 px-4">
+        <div className="flex flex-col items-center justify-center h-full space-y-10 px-4">
           {navLinks.map((link) => (
             <Link
               key={link.name}
               to={link.href}
-              className={`text-2xl sm:text-3xl uppercase tracking-[0.2em] hover:text-[#ff8c42] transition-colors duration-300 font-light ${
-                location.pathname === link.href ? 'text-[#ff8c42]' : 'text-white'
+              className={`font-display text-3xl sm:text-4xl uppercase tracking-wide hover:text-accent transition-slow font-medium ${
+                location.pathname === link.href ? 'text-accent' : 'text-text-primary'
               }`}
             >
               {link.name}
