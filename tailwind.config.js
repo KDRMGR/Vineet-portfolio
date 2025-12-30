@@ -2,6 +2,14 @@
 export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
+    screens: {
+      'xs': '475px',
+      'sm': '640px',
+      'md': '768px',
+      'lg': '1024px',
+      'xl': '1280px',
+      '2xl': '1536px',
+    },
     extend: {
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
@@ -9,23 +17,24 @@ export default {
       },
       colors: {
         primary: {
-          DEFAULT: '#0A0A0A',
+          DEFAULT: '#000000',
           light: '#1A1A1A',
         },
         accent: {
-          DEFAULT: '#8B7355',
-          light: '#A08B7A',
-          muted: '#C9B8A8',
+          DEFAULT: '#9f532e',
+          light: '#b36039',
+          muted: '#c97650',
         },
         background: {
-          DEFAULT: '#FAFAFA',
-          white: '#FFFFFF',
-          cream: '#F8F7F5',
+          DEFAULT: '#ffffff',
+          white: '#ffffff',
+          black: '#000000',
         },
         text: {
-          primary: '#0A0A0A',
-          secondary: '#4A4A4A',
-          muted: '#6B6B6B',
+          primary: '#000000',
+          secondary: '#333333',
+          muted: '#666666',
+          light: '#ffffff',
         },
       },
       spacing: {

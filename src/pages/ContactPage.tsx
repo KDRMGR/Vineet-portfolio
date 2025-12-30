@@ -29,21 +29,86 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-white text-black">
       {/* Hero Section */}
-      <section className="min-h-[60vh] flex items-center justify-center py-20 px-4 md:px-8">
-        <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-6xl md:text-9xl font-bold uppercase tracking-[0.3em] mb-8">
-            Contact
-          </h1>
-          <p className="text-2xl md:text-3xl uppercase tracking-[0.4em] text-gray-400">
-            Let's Create Something Amazing Together
-          </p>
+      <section className="py-16 md:py-24 px-4 md:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            {/* Left: Heading + contact */}
+            <div>
+              <p className="text-lg md:text-xl font-semibold tracking-wider" style={{ color: '#9f532e' }}>
+                Moksh Vora
+              </p>
+              <h1 className="font-display text-6xl md:text-8xl font-black uppercase tracking-wider leading-tight mt-4 mb-10">
+                Work<br />With Me
+              </h1>
+              <div className="space-y-6">
+                <div className="flex items-center gap-4">
+                  <MapPin className="w-6 h-6" />
+                  <span className="text-lg">Mumbai, India</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <Phone className="w-6 h-6" />
+                  <a href="tel:+918454871977" className="text-lg hover:opacity-80 transition-opacity">
+                    +91 845 487 1977
+                  </a>
+                </div>
+                <div className="flex items-center gap-4">
+                  <Mail className="w-6 h-6" />
+                  <a href="mailto:mokshvora69@gmail.com" className="text-lg hover:opacity-80 transition-opacity">
+                    mokshvora69@gmail.com
+                  </a>
+                </div>
+              </div>
+              <div className="flex gap-6 mt-10">
+                <a
+                  href="https://instagram.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-14 h-14 rounded-full bg-black text-white flex items-center justify-center"
+                  aria-label="Instagram"
+                >
+                  <Instagram className="w-7 h-7" />
+                </a>
+                <a
+                  href="https://linkedin.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-14 h-14 rounded-full bg-black text-white flex items-center justify-center"
+                  aria-label="LinkedIn"
+                >
+                  <Linkedin className="w-7 h-7" />
+                </a>
+              </div>
+            </div>
+            {/* Right: Collage */}
+            <div className="relative">
+              <div className="w-full max-w-lg mx-auto">
+                <div className="relative">
+                  <img
+                    src="https://images.unsplash.com/photo-1542038784456-1ea8e935640e?w=800&h=800&fit=crop"
+                    alt="Hero main"
+                    className="w-full h-auto object-cover rounded-md shadow-md"
+                  />
+                  <img
+                    src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&h=500&fit=crop"
+                    alt="Secondary"
+                    className="absolute -right-6 -bottom-6 w-40 h-40 object-cover rounded-md shadow-md rotate-6"
+                  />
+                  <img
+                    src="https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=500&h=500&fit=crop"
+                    alt="Secondary"
+                    className="absolute -left-6 -top-6 w-36 h-36 object-cover rounded-md shadow-md -rotate-6"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* Contact Info & Form Section */}
-      <section className="py-20 px-4 md:px-8">
+      <section className="py-20 px-4 md:px-8 bg-black text-white">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
             {/* Contact Information */}

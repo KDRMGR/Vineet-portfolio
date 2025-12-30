@@ -1,11 +1,17 @@
-import { ChevronDown, Camera } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export default function Hero() {
-  const [isVisible, setIsVisible] = useState(false);
+  const [currentWordIndex, setCurrentWordIndex] = useState(0);
+  const words = ['fashion & lifestyle', 'corporate events', 'concerts', 'people & places', 'nightlife'];
 
   useEffect(() => {
-    setIsVisible(true);
+    // Cycle through words every 2.5 seconds (slower than before)
+    const interval = setInterval(() => {
+      setCurrentWordIndex((prev) => (prev + 1) % words.length);
+    }, 2500);
+
+    return () => clearInterval(interval);
   }, []);
 
   const scrollToAbout = () => {
@@ -13,41 +19,68 @@ export default function Hero() {
   };
 
   return (
-    <section id="home" className="relative min-h-screen flex items-center justify-center bg-background-white overflow-hidden pt-20 py-30">
-      {/* Background decoration */}
-      <div className="absolute inset-0 opacity-5">
-        <Camera className="absolute top-10 left-4 sm:top-20 sm:left-20 w-16 h-16 sm:w-32 sm:h-32 text-accent animate-pulse" />
-        <Camera className="absolute bottom-10 right-4 sm:bottom-20 sm:right-20 w-16 h-16 sm:w-32 sm:h-32 text-accent animate-pulse" style={{ animationDelay: '1s' }} />
+    <section id="home" className="relative min-h-screen flex items-center justify-center bg-black overflow-hidden px-4">
+      {/* Animated text overlay - positioned exactly like reference */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-4">
+        <div className="text-center w-full max-w-4xl">
+          {/* Name - smaller and lighter like reference */}
+          <h2 className="font-display text-[10px] xs:text-xs sm:text-sm md:text-base font-normal tracking-[0.3em] mb-3 xs:mb-4 sm:mb-6 text-yellow-500 uppercase animate-fadeIn" style={{letterSpacing: '0.4em'}}>
+            MOKSH VORA
+          </h2>
+
+          {/* Image with overlaid heading - tighter positioning */}
+          <div className="relative mx-auto mb-6 sm:mb-8 w-24 h-24 xs:w-32 xs:h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 overflow-hidden animate-slideUp">
+            <img
+              src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&h=600&fit=crop"
+              alt="Moksh Vora"
+              className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
+            />
+            {/* Portfolio text overlay - positioned lower and tighter */}
+            <div className="pointer-events-none absolute -bottom-2 xs:-bottom-3 sm:-bottom-4 left-1/2 -translate-x-1/2 w-full px-2">
+              <h1 className="font-display text-3xl xs:text-4xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-black uppercase tracking-[0.15em] text-white leading-none animate-slideInLeft whitespace-nowrap" style={{letterSpacing: '0.2em'}}>
+                PORTFOLIO
+              </h1>
+            </div>
+          </div>
+
+          {/* Visual Storyteller - smaller and tighter spacing */}
+          <p className="font-sans text-xs xs:text-sm sm:text-base md:text-lg lg:text-xl tracking-[0.2em] mb-2 text-white font-light uppercase animate-slideInRight px-2" style={{letterSpacing: '0.25em'}}>
+            VISUAL STORYTELLER
+          </p>
+
+          {/* Director line - smaller and lighter */}
+          <p className="font-sans text-[9px] xs:text-[10px] sm:text-xs md:text-sm tracking-[0.15em] text-gray-400 font-light uppercase animate-fadeIn px-2" style={{letterSpacing: '0.2em'}}>
+            DIRECTOR • PHOTOGRAPHER • CINEMATOGRAPHER
+          </p>
+        </div>
       </div>
 
-      <div className={`text-center px-6 sm:px-8 relative z-10 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-        <h2 className="font-display text-xl sm:text-2xl md:text-3xl lg:text-4xl font-medium tracking-extra-wide mb-8 sm:mb-12 text-accent">
-          VINEET LABDHE
-        </h2>
-
-        <h1 className="font-display text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-bold tracking-wide mb-10 sm:mb-16 text-primary leading-tight">
-          <span className="inline-block px-0">
-            Portfolio
-          </span>
-        </h1>
-
-        <p className="font-sans text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-wide mb-4 sm:mb-6 text-text-primary font-light">
-          Visual Storyteller
-        </p>
-
-        <p className="font-sans text-base sm:text-lg md:text-xl lg:text-2xl tracking-wide text-text-secondary font-light">
-          Photographer | Cinematographer
-        </p>
+      {/* Rotating words at bottom - positioned like reference */}
+      <div className="absolute bottom-20 xs:bottom-24 left-1/2 -translate-x-1/2 text-center px-4 w-full">
+        <div className="relative h-5 xs:h-6">
+          {words.map((word, index) => (
+            <span
+              key={word}
+              className={`absolute left-1/2 -translate-x-1/2 font-sans text-[10px] xs:text-xs sm:text-sm uppercase tracking-[0.15em] text-gray-300 transition-all duration-500 whitespace-nowrap ${
+                index === currentWordIndex
+                  ? 'opacity-100 translate-y-0'
+                  : 'opacity-0 translate-y-1'
+              }`}
+              style={{letterSpacing: '0.2em'}}
+            >
+              {word}
+            </span>
+          ))}
+        </div>
       </div>
 
+      {/* Scroll button - smaller and more subtle */}
       <button
         onClick={scrollToAbout}
-        className="absolute bottom-12 sm:bottom-16 left-1/2 transform -translate-x-1/2 animate-bounce"
-        aria-label="Scroll down"
+        className="absolute bottom-6 xs:bottom-8 left-1/2 -translate-x-1/2 w-8 h-8 xs:w-10 xs:h-10 rounded-full border border-white/30 flex items-center justify-center hover:bg-white hover:text-black transition-all"
+        aria-label="Scroll to about"
       >
-        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border border-accent flex items-center justify-center hover:bg-accent hover:text-white transition-slow">
-          <ChevronDown className="w-7 h-7 sm:w-8 sm:h-8 text-accent group-hover:text-white" />
-        </div>
+        <ChevronDown className="w-3 h-3 xs:w-4 xs:h-4" />
       </button>
     </section>
   );

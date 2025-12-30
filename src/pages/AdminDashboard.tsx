@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { LogOut, Save, Trash2, Plus, Upload, Image as ImageIcon } from 'lucide-react';
+import { LogOut, Trash2, Plus, Image as ImageIcon } from 'lucide-react';
 
 interface ContentItem {
   id: string;
@@ -27,7 +27,6 @@ export default function AdminDashboard() {
   const [content, setContent] = useState<ContentItem[]>([]);
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('fashion');
-  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
   const categories = [
@@ -84,6 +83,60 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setMessage('Error: File size must be less than 5MB');
+      setTimeout(() => setMessage(''), 3000);
+      return;
+    }
+
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const filePath = `gallery/${selectedCategory}/${fileName}`;
+
+    setMessage('Uploading image...');
+
+    // Upload image to Supabase Storage
+    const { error: uploadError } = await supabase.storage
+      .from('images')
+      .upload(filePath, file);
+
+    if (uploadError) {
+      setMessage('Error uploading image: ' + uploadError.message);
+      setTimeout(() => setMessage(''), 3000);
+      return;
+    }
+
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('images')
+      .getPublicUrl(filePath);
+
+    const title = prompt('Enter image title:');
+    const description = prompt('Enter image description (optional):');
+
+    // Save to database
+    const { error: dbError } = await supabase.from('gallery_images').insert({
+      category: selectedCategory,
+      image_url: publicUrl,
+      title: title || null,
+      description: description || null,
+      order_index: galleryImages.length,
+    });
+
+    if (dbError) {
+      setMessage('Error saving image info: ' + dbError.message);
+    } else {
+      setMessage('Image uploaded successfully!');
+      fetchGalleryImages();
+    }
+    setTimeout(() => setMessage(''), 3000);
+  };
+
   const handleAddImage = async () => {
     const imageUrl = prompt('Enter image URL:');
     const title = prompt('Enter image title:');
@@ -138,16 +191,16 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-black text-white">
       <nav className="border-b border-gray-800">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold uppercase tracking-wider text-[#ff8c42]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+          <h1 className="text-lg sm:text-xl md:text-2xl font-bold uppercase tracking-wider text-[#ff8c42]">
             Admin Dashboard
           </h1>
           <button
             onClick={handleSignOut}
-            className="flex items-center gap-2 px-4 py-2 border-2 border-[#ff8c42] hover:bg-[#ff8c42] hover:text-black transition-all"
+            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 border-2 border-[#ff8c42] hover:bg-[#ff8c42] hover:text-black transition-all"
           >
-            <LogOut className="w-5 h-5" />
-            <span className="uppercase tracking-wider text-sm">Sign Out</span>
+            <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="uppercase tracking-wider text-xs sm:text-sm">Sign Out</span>
           </button>
         </div>
       </nav>
@@ -255,13 +308,25 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <button
-              onClick={handleAddImage}
-              className="mb-8 flex items-center gap-2 px-6 py-3 bg-[#ff8c42] text-black font-bold uppercase tracking-wider hover:bg-white transition-colors"
-            >
-              <Plus className="w-5 h-5" />
-              Add Image
-            </button>
+            <div className="mb-8 flex flex-wrap gap-4">
+              <label className="flex items-center gap-2 px-6 py-3 bg-[#ff8c42] text-black font-bold uppercase tracking-wider hover:bg-white transition-colors cursor-pointer">
+                <ImageIcon className="w-5 h-5" />
+                Upload Image
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+              </label>
+              <button
+                onClick={handleAddImage}
+                className="flex items-center gap-2 px-6 py-3 border-2 border-[#ff8c42] text-[#ff8c42] font-bold uppercase tracking-wider hover:bg-[#ff8c42] hover:text-black transition-colors"
+              >
+                <Plus className="w-5 h-5" />
+                Add URL
+              </button>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {galleryImages.map((image) => (
