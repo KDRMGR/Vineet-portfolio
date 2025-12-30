@@ -66,7 +66,7 @@ export default function Navigation() {
           {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center justify-between">
             <Link to="/" className="font-display text-yellow-500 font-semibold text-sm uppercase tracking-wider">
-              MV
+              VL
             </Link>
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}

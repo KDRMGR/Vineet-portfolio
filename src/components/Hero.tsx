@@ -25,14 +25,14 @@ export default function Hero() {
         <div className="text-center w-full max-w-4xl">
           {/* Name - smaller and lighter like reference */}
           <h2 className="font-display text-[10px] xs:text-xs sm:text-sm md:text-base font-normal tracking-[0.3em] mb-3 xs:mb-4 sm:mb-6 text-yellow-500 uppercase animate-fadeIn" style={{letterSpacing: '0.4em'}}>
-            MOKSH VORA
+            VINEET LABDHE
           </h2>
 
           {/* Image with overlaid heading - tighter positioning */}
           <div className="relative mx-auto mb-6 sm:mb-8 w-24 h-24 xs:w-32 xs:h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 overflow-hidden animate-slideUp">
             <img
               src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&h=600&fit=crop"
-              alt="Moksh Vora"
+              alt="Vineet Labdhe"
               className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
             />
             {/* Portfolio text overlay - positioned lower and tighter */}
