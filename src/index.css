@@ -10,8 +10,8 @@
   body {
     @apply font-sans antialiased;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-    background-color: #ffffff;
-    color: #1a1a1a;
+    background-color: #000000;
+    color: #ffffff;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -19,12 +19,12 @@
     font-weight: 400;
     letter-spacing: 0.12em;
     line-height: 1.1;
-    color: #1a1a1a;
+    color: #ffffff;
   }
 
   p {
     line-height: 1.7;
-    color: #4a4a4a;
+    color: #d1d1d1;
     font-weight: 300;
   }
 }
@@ -44,6 +44,20 @@
 
   .animate-slideInRight {
     animation: slideInRight 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+
+  .animate-fadeInUp {
+    animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    opacity: 0;
+  }
+
+  .animate-scaleIn {
+    animation: scaleIn 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    opacity: 0;
+  }
+
+  .animate-slideDown {
+    animation: slideDown 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
   }
 
   .transition-calm {
@@ -110,6 +124,50 @@
   }
 }
 
+@keyframes fadeInChar {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInChar {
+  from {
+    opacity: 0;
+    transform: translateY(100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 html {
   scroll-behavior: smooth;
 }
@@ -120,16 +178,16 @@ html {
 }
 
 ::-webkit-scrollbar-track {
-  background: #fafafa;
+  background: #1a1a1a;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #d1d1d1;
+  background: #404040;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #b1b1b1;
+  background: #606060;
 }
 
 /* Section transitions */
@@ -174,24 +232,24 @@ img {
   }
 }
 
-/* Responsive text-stroke for PORTFOLIO text */
+/* Responsive text-stroke for PORTFOLIO text - now with white outline on black bg */
 @media (max-width: 768px) {
   .text-stroke-portfolio {
-    -webkit-text-stroke: 1.5px #ffffff !important;
-    text-stroke: 1.5px #ffffff !important;
+    -webkit-text-stroke: 1.5px rgba(255, 255, 255, 0.3) !important;
+    text-stroke: 1.5px rgba(255, 255, 255, 0.3) !important;
   }
 }
 
 @media (min-width: 769px) and (max-width: 1024px) {
   .text-stroke-portfolio {
-    -webkit-text-stroke: 2px #ffffff !important;
-    text-stroke: 2px #ffffff !important;
+    -webkit-text-stroke: 2px rgba(255, 255, 255, 0.3) !important;
+    text-stroke: 2px rgba(255, 255, 255, 0.3) !important;
   }
 }
 
 @media (min-width: 1025px) {
   .text-stroke-portfolio {
-    -webkit-text-stroke: 2.5px #ffffff !important;
-    text-stroke: 2.5px #ffffff !important;
+    -webkit-text-stroke: 2.5px rgba(255, 255, 255, 0.3) !important;
+    text-stroke: 2.5px rgba(255, 255, 255, 0.3) !important;
   }
 }

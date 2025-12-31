@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase, LayoutType } from '../lib/supabase';
 import { ArrowLeft, X } from 'lucide-react';
+import GridLayout from '../components/gallery-layouts/GridLayout';
+import MasonryLayout from '../components/gallery-layouts/MasonryLayout';
+import CollageLayout from '../components/gallery-layouts/CollageLayout';
+import GroupedLayout from '../components/gallery-layouts/GroupedLayout';
 
 interface GalleryImage {
   id: string;
@@ -27,9 +31,11 @@ export default function GalleryPage() {
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
+  const [layoutType, setLayoutType] = useState<LayoutType>('grid');
 
   useEffect(() => {
     fetchImages();
+    fetchLayout();
   }, [category]);
 
   const fetchImages = async () => {
@@ -50,8 +56,26 @@ export default function GalleryPage() {
     setLoading(false);
   };
 
+  const fetchLayout = async () => {
+    if (!category) return;
+
+    const { data, error } = await supabase
+      .from('gallery_settings')
+      .select('layout_type')
+      .eq('category', category)
+      .single();
+
+    if (!error && data) {
+      setLayoutType(data.layout_type as LayoutType);
+    }
+  };
+
   const handleBack = () => {
     navigate('/');
+  };
+
+  const handleImageClick = (index: number) => {
+    setSelectedImage(images[index]);
   };
 
   if (loading) {
@@ -77,35 +101,10 @@ export default function GalleryPage() {
           {categoryTitles[category || ''] || category}
         </h1>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {images.map((image) => (
-            <div
-              key={image.id}
-              className="group relative overflow-hidden cursor-pointer transform transition-all duration-500 hover:scale-105"
-              onClick={() => setSelectedImage(image)}
-            >
-              <div className="aspect-[4/3] relative overflow-hidden bg-gray-900">
-                <img
-                  src={image.image_url}
-                  alt={image.title || ''}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                  <div className="text-center p-4">
-                    {image.title && (
-                      <h3 className="text-xl font-bold uppercase tracking-wider mb-2 text-[#ff8c42]">
-                        {image.title}
-                      </h3>
-                    )}
-                    {image.description && (
-                      <p className="text-sm text-gray-300">{image.description}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+        {layoutType === 'grid' && <GridLayout images={images} onImageClick={handleImageClick} />}
+        {layoutType === 'masonry' && <MasonryLayout images={images} onImageClick={handleImageClick} />}
+        {layoutType === 'collage' && <CollageLayout images={images} onImageClick={handleImageClick} />}
+        {layoutType === 'grouped' && <GroupedLayout images={images} onImageClick={handleImageClick} />}
 
         {images.length === 0 && (
           <div className="text-center py-20">

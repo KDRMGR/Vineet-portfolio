@@ -64,6 +64,31 @@ export type Database = {
           created_at?: string;
         };
       };
+      gallery_settings: {
+        Row: {
+          id: string;
+          category: string;
+          layout_type: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          category: string;
+          layout_type?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          category?: string;
+          layout_type?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
   };
 };
+
+export type LayoutType = 'grid' | 'masonry' | 'collage' | 'grouped';

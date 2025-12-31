@@ -16,7 +16,7 @@ function AppContent() {
   const showNavigation = !location.pathname.startsWith('/admin') && location.pathname !== '/login';
 
   return (
-    <div className="min-h-screen bg-white text-black overflow-x-hidden">
+    <div className="min-h-screen bg-black text-white overflow-x-hidden">
       {showNavigation && <Navigation />}
       <Routes>
         <Route path="/" element={<HomePage />} />

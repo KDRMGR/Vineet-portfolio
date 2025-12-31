@@ -73,13 +73,13 @@ export default function Photography() {
   }, []);
 
   return (
-    <section id="photography" className="min-h-screen bg-white py-32 md:py-40 px-6 md:px-10">
+    <section id="photography" className="min-h-screen bg-black text-white py-32 md:py-40 px-6 md:px-10">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-20 md:mb-24">
-          <h2 className="font-display text-4xl md:text-6xl lg:text-7xl font-light uppercase tracking-wider mb-8 text-gray-900 animate-fadeIn" style={{letterSpacing: '0.15em'}}>
+          <h2 className="font-display text-4xl md:text-6xl lg:text-7xl font-light uppercase tracking-wider mb-8 text-white animate-fadeIn" style={{letterSpacing: '0.15em'}}>
             MY PROJECTS
           </h2>
-          <p className="text-center text-sm md:text-base uppercase tracking-wider text-gray-600 animate-slideUp" style={{letterSpacing: '0.2em'}}>
+          <p className="text-center text-sm md:text-base uppercase tracking-wider text-gray-400 animate-slideUp" style={{letterSpacing: '0.2em'}}>
             Click on respective categories to navigate
           </p>
         </div>

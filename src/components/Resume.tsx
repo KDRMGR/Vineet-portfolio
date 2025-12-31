@@ -35,7 +35,7 @@ export default function Resume() {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <section id="resume" className="min-h-screen bg-white text-black py-20 px-4 md:px-8">
+    <section id="resume" className="min-h-screen bg-black text-white py-20 px-4 md:px-8">
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-12">
           <h2 className="text-6xl md:text-8xl font-bold uppercase tracking-[0.3em]">
@@ -43,7 +43,7 @@ export default function Resume() {
           </h2>
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="flex items-center space-x-2 border-2 border-black px-6 py-3 rounded-full hover:bg-black hover:text-white transition-colors"
+            className="flex items-center space-x-2 border-2 border-white px-6 py-3 rounded-full hover:bg-white hover:text-black transition-colors"
           >
             <span className="uppercase tracking-wider">
               {isExpanded ? 'Collapse' : 'Expand'}
@@ -67,7 +67,7 @@ export default function Resume() {
                         {skill.level}%
                       </span>
                     </div>
-                    <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="w-full h-3 bg-gray-800 rounded-full overflow-hidden">
                       <div
                         className="h-full transition-all duration-1000 rounded-full"
                         style={{
@@ -89,7 +89,7 @@ export default function Resume() {
                 {visualSkills.map((skill, index) => (
                   <div
                     key={index}
-                    className="border-2 border-black p-4 rounded-lg text-center hover:bg-black hover:text-white transition-colors"
+                    className="border-2 border-white p-4 rounded-lg text-center hover:bg-white hover:text-black transition-colors"
                   >
                     <span className="text-lg font-semibold uppercase tracking-wider">
                       {skill}

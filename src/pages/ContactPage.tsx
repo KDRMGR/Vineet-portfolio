@@ -82,7 +82,7 @@ export default function ContactPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white text-black">
+    <div className="min-h-screen bg-black text-white">
       {/* Hero Section */}
       <section className="py-16 md:py-24 px-4 md:px-8">
         <div className="max-w-7xl mx-auto">
@@ -92,23 +92,23 @@ export default function ContactPage() {
               <p className="text-lg md:text-xl font-semibold tracking-wider" style={{ color: '#9f532e' }}>
                 {displayName}
               </p>
-              <h1 className="font-display text-6xl md:text-8xl font-black uppercase tracking-wider leading-tight mt-4 mb-10">
+              <h1 className="font-display text-6xl md:text-8xl font-black uppercase tracking-wider leading-tight mt-4 mb-10 text-white">
                 Work<br />With Me
               </h1>
               <div className="space-y-6">
                 <div className="flex items-center gap-4">
-                  <MapPin className="w-6 h-6" />
-                  <span className="text-lg">{location}</span>
+                  <MapPin className="w-6 h-6 text-white" />
+                  <span className="text-lg text-gray-300">{location}</span>
                 </div>
                 <div className="flex items-center gap-4">
-                  <Phone className="w-6 h-6" />
-                  <a href={`tel:${phone.replace(/\s/g, '')}`} className="text-lg hover:opacity-80 transition-opacity">
+                  <Phone className="w-6 h-6 text-white" />
+                  <a href={`tel:${phone.replace(/\s/g, '')}`} className="text-lg text-gray-300 hover:text-white transition-colors">
                     {phone}
                   </a>
                 </div>
                 <div className="flex items-center gap-4">
-                  <Mail className="w-6 h-6" />
-                  <a href={`mailto:${email}`} className="text-lg hover:opacity-80 transition-opacity">
+                  <Mail className="w-6 h-6 text-white" />
+                  <a href={`mailto:${email}`} className="text-lg text-gray-300 hover:text-white transition-colors">
                     {email}
                   </a>
                 </div>
@@ -118,7 +118,7 @@ export default function ContactPage() {
                   href={instagram}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-14 h-14 rounded-full bg-black text-white flex items-center justify-center"
+                  className="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center hover:bg-gray-200 transition-colors"
                   aria-label="Instagram"
                 >
                   <Instagram className="w-7 h-7" />
@@ -127,7 +127,7 @@ export default function ContactPage() {
                   href={linkedin}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-14 h-14 rounded-full bg-black text-white flex items-center justify-center"
+                  className="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center hover:bg-gray-200 transition-colors"
                   aria-label="LinkedIn"
                 >
                   <Linkedin className="w-7 h-7" />
@@ -161,7 +161,7 @@ export default function ContactPage() {
       </section>
 
       {/* Contact Info & Form Section */}
-      <section className="py-20 px-4 md:px-8 bg-black text-white">
+      <section className="py-20 px-4 md:px-8 bg-black text-white border-t border-gray-900">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
             {/* Contact Information */}
@@ -181,13 +181,13 @@ export default function ContactPage() {
               <div className="space-y-6">
                 <div className="flex items-start space-x-4 group">
                   <div className="w-14 h-14 border-2 border-[#ff8c42] rounded-full flex items-center justify-center flex-shrink-0 group-hover:bg-[#ff8c42] transition-all">
-                    <Phone className="w-6 h-6" />
+                    <Phone className="w-6 h-6 text-white" />
                   </div>
                   <div>
                     <h3 className="text-xl font-bold uppercase tracking-wider mb-2">Phone</h3>
                     <a
                       href={`tel:${phone.replace(/\s/g, '')}`}
-                      className="text-lg hover:text-[#ff8c42] transition-colors"
+                      className="text-lg text-gray-300 hover:text-[#ff8c42] transition-colors"
                     >
                       {phone}
                     </a>
@@ -196,13 +196,13 @@ export default function ContactPage() {
 
                 <div className="flex items-start space-x-4 group">
                   <div className="w-14 h-14 border-2 border-[#ff8c42] rounded-full flex items-center justify-center flex-shrink-0 group-hover:bg-[#ff8c42] transition-all">
-                    <Mail className="w-6 h-6" />
+                    <Mail className="w-6 h-6 text-white" />
                   </div>
                   <div>
                     <h3 className="text-xl font-bold uppercase tracking-wider mb-2">Email</h3>
                     <a
                       href={`mailto:${email}`}
-                      className="text-lg hover:text-[#ff8c42] transition-colors"
+                      className="text-lg text-gray-300 hover:text-[#ff8c42] transition-colors"
                     >
                       {email}
                     </a>
@@ -211,7 +211,7 @@ export default function ContactPage() {
 
                 <div className="flex items-start space-x-4 group">
                   <div className="w-14 h-14 border-2 border-[#ff8c42] rounded-full flex items-center justify-center flex-shrink-0 group-hover:bg-[#ff8c42] transition-all">
-                    <MapPin className="w-6 h-6" />
+                    <MapPin className="w-6 h-6 text-white" />
                   </div>
                   <div>
                     <h3 className="text-xl font-bold uppercase tracking-wider mb-2">Location</h3>
@@ -221,7 +221,7 @@ export default function ContactPage() {
 
                 <div className="flex items-start space-x-4 group">
                   <div className="w-14 h-14 border-2 border-[#ff8c42] rounded-full flex items-center justify-center flex-shrink-0 group-hover:bg-[#ff8c42] transition-all">
-                    <Clock className="w-6 h-6" />
+                    <Clock className="w-6 h-6 text-white" />
                   </div>
                   <div>
                     <h3 className="text-xl font-bold uppercase tracking-wider mb-2">
@@ -242,7 +242,7 @@ export default function ContactPage() {
                     rel="noopener noreferrer"
                     className="w-14 h-14 border-2 border-[#ff8c42] rounded-full flex items-center justify-center hover:bg-[#ff8c42] transition-all"
                   >
-                    <Linkedin className="w-6 h-6" />
+                    <Linkedin className="w-6 h-6 text-white" />
                   </a>
 
                   <a
@@ -251,7 +251,7 @@ export default function ContactPage() {
                     rel="noopener noreferrer"
                     className="w-14 h-14 border-2 border-[#ff8c42] rounded-full flex items-center justify-center hover:bg-[#ff8c42] transition-all"
                   >
-                    <Instagram className="w-6 h-6" />
+                    <Instagram className="w-6 h-6 text-white" />
                   </a>
                 </div>
               </div>
@@ -283,7 +283,7 @@ export default function ContactPage() {
                         value={formData.name}
                         onChange={handleChange}
                         required
-                        className="w-full px-4 py-3 bg-transparent border-2 border-gray-700 focus:border-[#ff8c42] outline-none transition-colors"
+                        className="w-full px-4 py-3 bg-transparent border-2 border-gray-700 focus:border-[#ff8c42] outline-none transition-colors text-white"
                         placeholder="Your full name"
                       />
                     </div>
@@ -299,14 +299,14 @@ export default function ContactPage() {
                         value={formData.email}
                         onChange={handleChange}
                         required
-                        className="w-full px-4 py-3 bg-transparent border-2 border-gray-700 focus:border-[#ff8c42] outline-none transition-colors"
-                        placeholder="your@email.com"
+                        className="w-full px-4 py-3 bg-transparent border-2 border-gray-700 focus:border-[#ff8c42] outline-none transition-colors text-white"
+                        placeholder="Your email address"
                       />
                     </div>
 
                     <div>
                       <label htmlFor="subject" className="block text-sm uppercase tracking-wider mb-2">
-                        Subject *
+                        Subject
                       </label>
                       <input
                         type="text"
@@ -314,9 +314,8 @@ export default function ContactPage() {
                         name="subject"
                         value={formData.subject}
                         onChange={handleChange}
-                        required
-                        className="w-full px-4 py-3 bg-transparent border-2 border-gray-700 focus:border-[#ff8c42] outline-none transition-colors"
-                        placeholder="Project inquiry, booking, etc."
+                        className="w-full px-4 py-3 bg-transparent border-2 border-gray-700 focus:border-[#ff8c42] outline-none transition-colors text-white"
+                        placeholder="Project type or inquiry"
                       />
                     </div>
 
@@ -330,57 +329,23 @@ export default function ContactPage() {
                         value={formData.message}
                         onChange={handleChange}
                         required
-                        rows={6}
-                        className="w-full px-4 py-3 bg-transparent border-2 border-gray-700 focus:border-[#ff8c42] outline-none transition-colors resize-none"
+                        rows={5}
+                        className="w-full px-4 py-3 bg-transparent border-2 border-gray-700 focus:border-[#ff8c42] outline-none transition-colors text-white"
                         placeholder="Tell me about your project..."
                       />
                     </div>
 
                     <button
                       type="submit"
-                      className="w-full bg-[#ff8c42] text-black font-bold uppercase tracking-wider py-4 px-8 hover:bg-white transition-colors flex items-center justify-center gap-3 group"
+                      className="w-full bg-[#ff8c42] text-white font-bold uppercase tracking-wider py-4 hover:bg-[#e67e3a] transition-colors flex items-center justify-center gap-2"
                     >
-                      <span>Send Message</span>
-                      <Send className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                      <Send className="w-5 h-5" />
+                      Send Message
                     </button>
                   </form>
                 )}
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* FAQs Section */}
-      <section className="py-20 px-4 md:px-8 border-t border-gray-800">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-4xl md:text-5xl font-bold uppercase tracking-wider mb-16 text-center">
-            Frequently Asked Questions
-          </h2>
-          <div className="space-y-8">
-            {[
-              {
-                q: 'What areas do you cover?',
-                a: 'I primarily work in Mumbai and surrounding areas, but I\'m available for travel worldwide for destination events and shoots.',
-              },
-              {
-                q: 'How far in advance should I book?',
-                a: 'I recommend booking at least 2-3 months in advance for events, especially during peak season. However, I can accommodate last-minute requests based on availability.',
-              },
-              {
-                q: 'Do you provide both photography and videography?',
-                a: 'Yes! I offer complete coverage including photography, cinematography, and video editing services.',
-              },
-              {
-                q: 'How long does editing take?',
-                a: 'Turnaround time is typically 2-3 weeks for events and 1-2 weeks for portrait sessions. Rush delivery can be arranged for an additional fee.',
-              },
-            ].map((faq, index) => (
-              <div key={index} className="border-l-2 border-[#ff8c42] pl-6">
-                <h3 className="text-xl font-bold mb-3">{faq.q}</h3>
-                <p className="text-gray-400">{faq.a}</p>
-              </div>
-            ))}
           </div>
         </div>
       </section>

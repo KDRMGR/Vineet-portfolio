@@ -85,7 +85,7 @@ export default function PhotographyPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-gray-900">
+    <div className="min-h-screen bg-black text-white">
       {/* Hero Section with Video/Image */}
       <section className="relative min-h-screen flex items-center justify-center py-20 px-4 md:px-8 overflow-hidden">
         {/* Background Video/Image */}
@@ -108,19 +108,19 @@ export default function PhotographyPage() {
                 className="w-full h-full object-cover opacity-30"
               />
             )}
-            <div className="absolute inset-0 bg-white/60"></div>
+            <div className="absolute inset-0 bg-black/60"></div>
           </div>
         )}
 
         {/* Hero Content */}
         <div className="relative z-10 text-center">
           <div className="mb-12">
-            <Camera className="w-24 h-24 mx-auto mb-8 text-gray-700" />
+            <Camera className="w-24 h-24 mx-auto mb-8 text-white" />
           </div>
           <h1 className="font-display text-6xl md:text-9xl font-light uppercase tracking-[0.15em] mb-8" style={{letterSpacing: '0.15em'}}>
             {heading}
           </h1>
-          <p className="font-sans text-2xl md:text-3xl uppercase tracking-[0.25em] mb-12 text-gray-600" style={{letterSpacing: '0.25em'}}>
+          <p className="font-sans text-2xl md:text-3xl uppercase tracking-[0.25em] mb-12 text-gray-400" style={{letterSpacing: '0.25em'}}>
             {subheading}
           </p>
 
@@ -141,9 +141,9 @@ export default function PhotographyPage() {
         {heroImage && heroImage.match(/\.(mp4|webm|ogg)$/i) && (
           <button
             onClick={() => window.open(heroImage, '_blank')}
-            className="absolute bottom-8 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full bg-white/80 flex items-center justify-center hover:bg-white transition-all group"
+            className="absolute bottom-8 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/40 transition-all group"
           >
-            <PlayCircle className="w-8 h-8 text-gray-900 group-hover:text-gray-700" />
+            <PlayCircle className="w-8 h-8 text-white group-hover:text-gray-200" />
           </button>
         )}
       </section>
@@ -181,12 +181,12 @@ export default function PhotographyPage() {
               return (
                 <div key={index} className="text-center group">
                   <div className="w-20 h-20 mx-auto mb-6 flex items-center justify-center">
-                    <IconComponent className="w-10 h-10 text-gray-700 group-hover:text-gray-900 transition-colors" />
+                    <IconComponent className="w-10 h-10 text-gray-400 group-hover:text-white transition-colors" />
                   </div>
                   <h3 className="font-display text-lg md:text-xl font-light uppercase tracking-wide mb-4" style={{letterSpacing: '0.1em'}}>
                     {service.title}
                   </h3>
-                  <p className="text-sm text-gray-600 leading-relaxed" style={{letterSpacing: '0.02em'}}>
+                  <p className="text-sm text-gray-400 leading-relaxed" style={{letterSpacing: '0.02em'}}>
                     {service.description}
                   </p>
                 </div>
@@ -197,12 +197,12 @@ export default function PhotographyPage() {
       </section>
 
       {/* Gallery Categories */}
-      <section className="py-32 md:py-40 px-4 md:px-8 bg-gray-50">
+      <section className="py-32 md:py-40 px-4 md:px-8 bg-neutral-900">
         <div className="max-w-6xl mx-auto">
           <h2 className="font-display text-4xl md:text-6xl font-light uppercase tracking-wider mb-8 text-center" style={{letterSpacing: '0.15em'}}>
             Explore Categories
           </h2>
-          <p className="font-sans text-center text-sm md:text-base uppercase tracking-wider text-gray-600 mb-20 md:mb-24" style={{letterSpacing: '0.2em'}}>
+          <p className="font-sans text-center text-sm md:text-base uppercase tracking-wider text-gray-400 mb-20 md:mb-24" style={{letterSpacing: '0.2em'}}>
             Click on respective categories to navigate
           </p>
 
@@ -256,11 +256,11 @@ export default function PhotographyPage() {
               { step: '04', title: 'Delivery', desc: 'Edited high-quality images delivered' },
             ].map((item) => (
               <div key={item.step} className="text-center">
-                <div className="font-display text-5xl font-light text-gray-300 mb-6" style={{letterSpacing: '0.05em'}}>{item.step}</div>
+                <div className="font-display text-5xl font-light text-gray-500 mb-6" style={{letterSpacing: '0.05em'}}>{item.step}</div>
                 <h3 className="font-display text-lg md:text-xl font-light uppercase tracking-wide mb-4" style={{letterSpacing: '0.1em'}}>
                   {item.title}
                 </h3>
-                <p className="text-sm text-gray-600 leading-relaxed" style={{letterSpacing: '0.02em'}}>
+                <p className="text-sm text-gray-400 leading-relaxed" style={{letterSpacing: '0.02em'}}>
                   {item.desc}
                 </p>
               </div>
@@ -275,12 +275,12 @@ export default function PhotographyPage() {
           <h2 className="font-display text-4xl md:text-5xl font-light uppercase tracking-wider mb-8" style={{letterSpacing: '0.15em'}}>
             Ready to Create Something Amazing?
           </h2>
-          <p className="font-sans text-xl text-gray-600 mb-12" style={{letterSpacing: '0.02em'}}>
+          <p className="font-sans text-xl text-gray-400 mb-12" style={{letterSpacing: '0.02em'}}>
             Let's bring your vision to life through professional photography
           </p>
           <Link
             to="/contact"
-            className="inline-block px-12 py-5 bg-gray-900 text-white font-light uppercase tracking-wider text-sm hover:bg-gray-700 transition-all"
+            className="inline-block px-12 py-5 bg-white text-black font-light uppercase tracking-wider text-sm hover:bg-gray-200 transition-all"
             style={{letterSpacing: '0.1em'}}
           >
             Get In Touch

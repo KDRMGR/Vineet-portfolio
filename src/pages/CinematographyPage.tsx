@@ -68,14 +68,14 @@ export default function CinematographyPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white text-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="text-2xl uppercase tracking-wider">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white text-gray-900">
+    <div className="min-h-screen bg-black text-white">
       {/* Hero Section with Video */}
       <section className="relative min-h-screen flex items-center justify-center py-20 px-4 md:px-8 overflow-hidden">
         {/* Background Video */}
@@ -90,19 +90,19 @@ export default function CinematographyPage() {
             >
               <source src={heroVideo} type="video/mp4" />
             </video>
-            <div className="absolute inset-0 bg-white/60"></div>
+            <div className="absolute inset-0 bg-black/60"></div>
           </div>
         )}
 
         {/* Hero Content */}
         <div className="relative z-10 text-center">
           <div className="mb-12">
-            <Film className="w-24 h-24 mx-auto mb-8 text-gray-700" />
+            <Film className="w-24 h-24 mx-auto mb-8 text-white" />
           </div>
           <h1 className="font-display text-6xl md:text-9xl font-light uppercase tracking-[0.15em] mb-8" style={{letterSpacing: '0.15em'}}>
             {heading}
           </h1>
-          <p className="font-sans text-2xl md:text-3xl uppercase tracking-[0.25em] mb-12 text-gray-600" style={{letterSpacing: '0.25em'}}>
+          <p className="font-sans text-2xl md:text-3xl uppercase tracking-[0.25em] mb-12 text-gray-400" style={{letterSpacing: '0.25em'}}>
             {subheading}
           </p>
 
@@ -124,9 +124,9 @@ export default function CinematographyPage() {
         {heroVideo && (
           <button
             onClick={() => setSelectedVideo(heroVideo)}
-            className="absolute bottom-8 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full bg-white/80 flex items-center justify-center hover:bg-white transition-all group"
+            className="absolute bottom-8 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/40 transition-all group"
           >
-            <PlayCircle className="w-8 h-8 text-gray-900 group-hover:text-gray-700" />
+            <PlayCircle className="w-8 h-8 text-white group-hover:text-gray-200" />
           </button>
         )}
       </section>
@@ -164,12 +164,12 @@ export default function CinematographyPage() {
               return (
                 <div key={index} className="text-center group">
                   <div className="w-20 h-20 mx-auto mb-6 flex items-center justify-center">
-                    <IconComponent className="w-10 h-10 text-gray-700 group-hover:text-gray-900 transition-colors" />
+                    <IconComponent className="w-10 h-10 text-gray-400 group-hover:text-white transition-colors" />
                   </div>
                   <h3 className="font-display text-lg md:text-xl font-light uppercase tracking-wide mb-4" style={{letterSpacing: '0.1em'}}>
                     {service.title}
                   </h3>
-                  <p className="text-sm text-gray-600 leading-relaxed" style={{letterSpacing: '0.02em'}}>
+                  <p className="text-sm text-gray-400 leading-relaxed" style={{letterSpacing: '0.02em'}}>
                     {service.description}
                   </p>
                 </div>
@@ -180,7 +180,7 @@ export default function CinematographyPage() {
       </section>
 
       {/* Projects Grid */}
-      <section className="py-32 md:py-40 px-4 md:px-8 bg-gray-50">
+      <section className="py-32 md:py-40 px-4 md:px-8 bg-neutral-900">
         <div className="max-w-6xl mx-auto">
           <h2 className="font-display text-4xl md:text-6xl font-light uppercase tracking-wider mb-20 md:mb-24 text-center" style={{letterSpacing: '0.15em'}}>
             Featured Projects

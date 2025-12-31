@@ -30,7 +30,7 @@ const categories = [
 
 export default function Projects() {
   return (
-    <section id="projects" className="min-h-screen bg-white text-black py-20 px-4 md:px-8">
+    <section id="projects" className="min-h-screen bg-black text-white py-20 px-4 md:px-8">
       <div className="max-w-7xl mx-auto">
         <h2 className="text-6xl md:text-8xl font-bold uppercase tracking-[0.3em] mb-16 text-center">
           My Projects
@@ -46,7 +46,7 @@ export default function Projects() {
             return (
               <div
                 key={index}
-                className="group relative overflow-hidden border-2 border-black rounded-lg p-8 hover:bg-black hover:text-white transition-all duration-300 cursor-pointer"
+                className="group relative overflow-hidden border-2 border-white rounded-lg p-8 hover:bg-white hover:text-black transition-all duration-300 cursor-pointer"
               >
                 <div className="flex flex-col items-center text-center space-y-4">
                   <IconComponent className="w-16 h-16" />
