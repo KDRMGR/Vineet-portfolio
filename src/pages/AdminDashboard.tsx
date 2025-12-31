@@ -23,7 +23,7 @@ interface GalleryImage {
 export default function AdminDashboard() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'content' | 'gallery' | 'cinematography' | 'photography' | 'pages' | 'logo'>('content');
+  const [activeTab, setActiveTab] = useState<'content' | 'gallery' | 'cinematography' | 'photography' | 'pages'>('content');
   const [content, setContent] = useState<ContentItem[]>([]);
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('fashion');
@@ -41,8 +41,6 @@ export default function AdminDashboard() {
   const [pageMedia, setPageMedia] = useState<Record<string, GalleryImage | null>>({});
   const [pageMediaDraft, setPageMediaDraft] = useState({ category: '', url: '', file: null as File | null });
   const [showPageMediaModal, setShowPageMediaModal] = useState(false);
-  const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [logoPreview, setLogoPreview] = useState<string>('');
 
   const categories = [
     { id: 'fashion', name: 'Fashion & Lifestyle' },
@@ -498,16 +496,6 @@ export default function AdminDashboard() {
             }`}
           >
             Photography
-          </button>
-          <button
-            onClick={() => setActiveTab('logo')}
-            className={`px-6 py-3 uppercase tracking-wider font-semibold transition-colors ${
-              activeTab === 'logo'
-                ? 'text-[#ff8c42] border-b-2 border-[#ff8c42]'
-                : 'text-gray-500 hover:text-white'
-            }`}
-          >
-            Logo
           </button>
         </div>
 
@@ -995,165 +983,6 @@ export default function AdminDashboard() {
                   >
                     {isUploading ? (uploadPreview.file ? 'Uploading...' : 'Adding...') : (uploadPreview.file ? 'Upload' : 'Add')}
                   </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'logo' && (
-          <div className="space-y-8">
-            <div className="border-2 border-gray-800 p-6">
-              <h2 className="text-2xl font-bold uppercase tracking-wider mb-6 text-[#ff8c42]">
-                Logo Management
-              </h2>
-
-              <div className="space-y-6">
-                {/* Current Logo Display */}
-                <div>
-                  <label className="block text-sm uppercase tracking-wider mb-3 text-gray-400">
-                    Current Logo
-                  </label>
-                  <div className="bg-black p-6 rounded border-2 border-gray-700 flex items-center justify-center">
-                    <img
-                      src={logoPreview || '/logo.png'}
-                      alt="Current Logo"
-                      className="max-h-32 w-auto"
-                      onError={(e) => {
-                        e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="100"%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" fill="gray"%3ENo Logo%3C/text%3E%3C/svg%3E';
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* Upload New Logo */}
-                <div>
-                  <label className="block text-sm uppercase tracking-wider mb-3 text-gray-400">
-                    Upload New Logo
-                  </label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        setLogoFile(file);
-                        const preview = URL.createObjectURL(file);
-                        setLogoPreview(preview);
-                      }
-                    }}
-                    className="w-full px-4 py-3 bg-black border-2 border-gray-700 focus:border-[#ff8c42] outline-none text-white"
-                  />
-                  <p className="text-xs text-gray-500 mt-2">
-                    Recommended: PNG or JPG format, transparent background preferred
-                  </p>
-                </div>
-
-                {/* Preview */}
-                {logoPreview && logoFile && (
-                  <div>
-                    <label className="block text-sm uppercase tracking-wider mb-3 text-gray-400">
-                      Preview
-                    </label>
-                    <div className="bg-black p-6 rounded border-2 border-[#ff8c42] flex items-center justify-center">
-                      <img
-                        src={logoPreview}
-                        alt="Logo Preview"
-                        className="max-h-32 w-auto"
-                      />
-                    </div>
-                    <p className="text-xs text-gray-400 mt-2">
-                      File: {logoFile.name} ({((logoFile.size || 0) / 1024).toFixed(2)} KB)
-                    </p>
-                  </div>
-                )}
-
-                {/* Action Buttons */}
-                <div className="flex gap-4">
-                  <button
-                    onClick={() => {
-                      setLogoFile(null);
-                      setLogoPreview('');
-                    }}
-                    disabled={!logoFile}
-                    className="px-6 py-3 border-2 border-gray-600 text-gray-300 font-bold uppercase tracking-wider hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Clear
-                  </button>
-                  <button
-                    onClick={async () => {
-                      if (!logoFile) return;
-
-                      setIsUploading(true);
-                      try {
-                        // Upload to storage
-                        const ext = logoFile.name.split('.').pop() || 'png';
-                        const path = `logo.${ext}`;
-
-                        // Remove old logo if exists
-                        const { data: files } = await supabase.storage
-                          .from('media')
-                          .list('', { search: 'logo' });
-
-                        if (files && files.length > 0) {
-                          for (const file of files) {
-                            await supabase.storage.from('media').remove([file.name]);
-                          }
-                        }
-
-                        // Upload new logo
-                        const { error: uploadError } = await supabase.storage
-                          .from('media')
-                          .upload(path, logoFile, {
-                            upsert: true,
-                            contentType: logoFile.type,
-                          });
-
-                        if (uploadError) throw uploadError;
-
-                        const { data } = supabase.storage.from('media').getPublicUrl(path);
-
-                        // Store logo URL in content table
-                        await supabase
-                          .from('content')
-                          .upsert(
-                            {
-                              section: 'branding',
-                              key: 'logo_url',
-                              value: data.publicUrl,
-                              updated_at: new Date().toISOString(),
-                            },
-                            { onConflict: 'section,key' }
-                          );
-
-                        setMessage('Logo updated successfully! It will appear on the next page refresh.');
-                        setTimeout(() => setMessage(''), 3000);
-                        setLogoFile(null);
-                      } catch (error) {
-                        setMessage('Error uploading logo. Please check Supabase storage configuration.');
-                        console.error(error);
-                      } finally {
-                        setIsUploading(false);
-                      }
-                    }}
-                    disabled={!logoFile || isUploading}
-                    className="flex-1 px-6 py-3 bg-[#ff8c42] text-black font-bold uppercase tracking-wider hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isUploading ? 'Uploading...' : 'Update Logo'}
-                  </button>
-                </div>
-
-                {/* Instructions */}
-                <div className="bg-black/50 p-4 rounded border border-gray-700">
-                  <h3 className="text-sm font-semibold uppercase tracking-wider mb-2 text-[#ff8c42]">
-                    Instructions
-                  </h3>
-                  <ul className="text-sm text-gray-400 space-y-1">
-                    <li>• Upload a new logo image (PNG or JPG recommended)</li>
-                    <li>• The logo will be displayed in the navigation bar</li>
-                    <li>• For best results, use a transparent background PNG</li>
-                    <li>• The logo will automatically scale to fit the navigation</li>
-                  </ul>
                 </div>
               </div>
             </div>
