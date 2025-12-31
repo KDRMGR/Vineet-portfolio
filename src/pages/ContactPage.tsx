@@ -1,7 +1,18 @@
-import { useState, FormEvent } from 'react';
+import { useEffect, useState, FormEvent } from 'react';
 import { Phone, Mail, MapPin, Linkedin, Instagram, Send, Clock, CheckCircle } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 export default function ContactPage() {
+  const [displayName, setDisplayName] = useState('Vineet Labdhe');
+  const [location, setLocation] = useState('Mumbai, India');
+  const [phone, setPhone] = useState('+91 845 487 1977');
+  const [email, setEmail] = useState('contact@vineetlabdhe.com');
+  const [instagram, setInstagram] = useState('https://instagram.com');
+  const [linkedin, setLinkedin] = useState('https://linkedin.com');
+  const [heroMainImage, setHeroMainImage] = useState('https://images.unsplash.com/photo-1542038784456-1ea8e935640e?w=800&h=800&fit=crop');
+  const [heroSecondary1, setHeroSecondary1] = useState('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&h=500&fit=crop');
+  const [heroSecondary2, setHeroSecondary2] = useState('https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=500&h=500&fit=crop');
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -28,6 +39,48 @@ export default function ContactPage() {
     });
   };
 
+  useEffect(() => {
+    const load = async () => {
+      const { data: heroContent } = await supabase
+        .from('content')
+        .select('key,value')
+        .eq('section', 'hero')
+        .in('key', ['name']);
+
+      if (heroContent?.[0]?.value) setDisplayName(heroContent[0].value);
+
+      const { data: contactContent } = await supabase
+        .from('content')
+        .select('key,value')
+        .eq('section', 'contact')
+        .in('key', ['email', 'phone', 'location', 'instagram', 'linkedin']);
+
+      for (const row of contactContent || []) {
+        if (row.key === 'email') setEmail(row.value);
+        if (row.key === 'phone') setPhone(row.value);
+        if (row.key === 'location') setLocation(row.value);
+        if (row.key === 'instagram') setInstagram(row.value);
+        if (row.key === 'linkedin') setLinkedin(row.value);
+      }
+
+      const { data: media } = await supabase
+        .from('gallery_images')
+        .select('*')
+        .in('category', ['contact-hero-main', 'contact-hero-secondary-1', 'contact-hero-secondary-2'])
+        .order('order_index', { ascending: true });
+
+      const main = (media || []).find((m) => m.category === 'contact-hero-main');
+      const s1 = (media || []).find((m) => m.category === 'contact-hero-secondary-1');
+      const s2 = (media || []).find((m) => m.category === 'contact-hero-secondary-2');
+
+      if (main?.image_url) setHeroMainImage(main.image_url);
+      if (s1?.image_url) setHeroSecondary1(s1.image_url);
+      if (s2?.image_url) setHeroSecondary2(s2.image_url);
+    };
+
+    load();
+  }, []);
+
   return (
     <div className="min-h-screen bg-white text-black">
       {/* Hero Section */}
@@ -37,7 +90,7 @@ export default function ContactPage() {
             {/* Left: Heading + contact */}
             <div>
               <p className="text-lg md:text-xl font-semibold tracking-wider" style={{ color: '#9f532e' }}>
-                Moksh Vora
+                {displayName}
               </p>
               <h1 className="font-display text-6xl md:text-8xl font-black uppercase tracking-wider leading-tight mt-4 mb-10">
                 Work<br />With Me
@@ -45,24 +98,24 @@ export default function ContactPage() {
               <div className="space-y-6">
                 <div className="flex items-center gap-4">
                   <MapPin className="w-6 h-6" />
-                  <span className="text-lg">Mumbai, India</span>
+                  <span className="text-lg">{location}</span>
                 </div>
                 <div className="flex items-center gap-4">
                   <Phone className="w-6 h-6" />
-                  <a href="tel:+918454871977" className="text-lg hover:opacity-80 transition-opacity">
-                    +91 845 487 1977
+                  <a href={`tel:${phone.replace(/\s/g, '')}`} className="text-lg hover:opacity-80 transition-opacity">
+                    {phone}
                   </a>
                 </div>
                 <div className="flex items-center gap-4">
                   <Mail className="w-6 h-6" />
-                  <a href="mailto:mokshvora69@gmail.com" className="text-lg hover:opacity-80 transition-opacity">
-                    mokshvora69@gmail.com
+                  <a href={`mailto:${email}`} className="text-lg hover:opacity-80 transition-opacity">
+                    {email}
                   </a>
                 </div>
               </div>
               <div className="flex gap-6 mt-10">
                 <a
-                  href="https://instagram.com"
+                  href={instagram}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-14 h-14 rounded-full bg-black text-white flex items-center justify-center"
@@ -71,7 +124,7 @@ export default function ContactPage() {
                   <Instagram className="w-7 h-7" />
                 </a>
                 <a
-                  href="https://linkedin.com"
+                  href={linkedin}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-14 h-14 rounded-full bg-black text-white flex items-center justify-center"
@@ -86,17 +139,17 @@ export default function ContactPage() {
               <div className="w-full max-w-lg mx-auto">
                 <div className="relative">
                   <img
-                    src="https://images.unsplash.com/photo-1542038784456-1ea8e935640e?w=800&h=800&fit=crop"
+                    src={heroMainImage}
                     alt="Hero main"
                     className="w-full h-auto object-cover rounded-md shadow-md"
                   />
                   <img
-                    src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&h=500&fit=crop"
+                    src={heroSecondary1}
                     alt="Secondary"
                     className="absolute -right-6 -bottom-6 w-40 h-40 object-cover rounded-md shadow-md rotate-6"
                   />
                   <img
-                    src="https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=500&h=500&fit=crop"
+                    src={heroSecondary2}
                     alt="Secondary"
                     className="absolute -left-6 -top-6 w-36 h-36 object-cover rounded-md shadow-md -rotate-6"
                   />
@@ -133,10 +186,10 @@ export default function ContactPage() {
                   <div>
                     <h3 className="text-xl font-bold uppercase tracking-wider mb-2">Phone</h3>
                     <a
-                      href="tel:+918454871977"
+                      href={`tel:${phone.replace(/\s/g, '')}`}
                       className="text-lg hover:text-[#ff8c42] transition-colors"
                     >
-                      +91 845 487 1977
+                      {phone}
                     </a>
                   </div>
                 </div>
@@ -148,10 +201,10 @@ export default function ContactPage() {
                   <div>
                     <h3 className="text-xl font-bold uppercase tracking-wider mb-2">Email</h3>
                     <a
-                      href="mailto:contact@vineetlabdhe.com"
+                      href={`mailto:${email}`}
                       className="text-lg hover:text-[#ff8c42] transition-colors"
                     >
-                      contact@vineetlabdhe.com
+                      {email}
                     </a>
                   </div>
                 </div>
@@ -162,7 +215,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="text-xl font-bold uppercase tracking-wider mb-2">Location</h3>
-                    <p className="text-lg text-gray-300">Mumbai, Maharashtra, India</p>
+                    <p className="text-lg text-gray-300">{location}</p>
                   </div>
                 </div>
 
@@ -184,7 +237,7 @@ export default function ContactPage() {
                 <h3 className="text-2xl font-bold uppercase tracking-wider mb-6">Connect With Me</h3>
                 <div className="flex gap-4">
                   <a
-                    href="https://linkedin.com"
+                    href={linkedin}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-14 h-14 border-2 border-[#ff8c42] rounded-full flex items-center justify-center hover:bg-[#ff8c42] transition-all"
@@ -193,7 +246,7 @@ export default function ContactPage() {
                   </a>
 
                   <a
-                    href="https://instagram.com"
+                    href={instagram}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-14 h-14 border-2 border-[#ff8c42] rounded-full flex items-center justify-center hover:bg-[#ff8c42] transition-all"

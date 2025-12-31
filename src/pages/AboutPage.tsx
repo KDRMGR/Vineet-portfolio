@@ -3,16 +3,16 @@ import { Link } from 'react-router-dom';
 
 export default function AboutPage() {
   const technicalSkills = [
-    { name: 'Photoshop', level: 88 },
-    { name: 'Lightroom', level: 90 },
-    { name: 'Premiere Pro', level: 85 },
+    { name: 'Cinematography', level: 90 },
     { name: 'Photography', level: 92 },
+    { name: 'Photo Editing', level: 88 },
+    { name: 'Video Editing', level: 85 },
   ];
 
   const education = [
-    { institution: 'Jai Hind College', location: 'Mumbai', years: '2023-2026' },
-    { institution: 'PACE Jr. Science College', location: 'Mumbai', years: '2021-2023' },
-    { institution: 'Children\'s Academy', location: 'Mumbai', years: '2011-2021' },
+    { institution: 'Uma Milind High School', years: '2005-2015' },
+    { institution: 'Western College', years: '2016-2017' },
+    { institution: 'Vidyalankar School of Information Technology', years: '2017-2020' },
   ];
 
   const visualSkills = [
@@ -41,21 +41,18 @@ export default function AboutPage() {
           <h1 className="text-6xl md:text-8xl font-bold uppercase tracking-[0.3em] mb-8">
             Vineet Labdhe
           </h1>
-          <p className="text-3xl md:text-4xl uppercase tracking-[0.4em] mb-12 text-[#bfdd75]">
-            Visual Storyteller
+          <p className="text-3xl md:text-4xl uppercase tracking-[0.4em] mb-12 text-[#ff8c42]">
+            Moment Curator
           </p>
 
           <div className="max-w-3xl mx-auto mb-16">
             <p className="text-lg md:text-xl leading-relaxed text-justify mb-6">
-              The course of my journey has led me to discover my ability to capture moments and
-              create enticing visuals. As a commercial event photographer and videographer with a
-              strong foundation in mass media, I bring hands-on experience across corporate events,
-              conferences, concerts, and live shows.
+              I am a commercial event photographer and videographer with a strong foundation in mass media
+              and hands-on experience across corporate events, conferences, concerts, and live shows.
             </p>
             <p className="text-lg md:text-xl leading-relaxed text-justify">
-              Each project adds productive, on-ground experience to my journey, cultivating
-              dedication, precision, and professionalism while delivering visuals that meet industry
-              standards and resonate with audiences.
+              Each project adds productive, on-ground experience to my journey, strengthening my execution,
+              precision, and professionalism while delivering visuals that meet commercial and industry standards.
             </p>
           </div>
         </div>
@@ -97,7 +94,6 @@ export default function AboutPage() {
                 {education.map((edu, index) => (
                   <div key={index} className="border-l-2 border-[#ff8c42] pl-4">
                     <h3 className="text-xl font-bold mb-1">{edu.institution}</h3>
-                    <p className="text-gray-400">{edu.location}</p>
                     <p className="text-sm text-[#ff8c42] mt-1">{edu.years}</p>
                   </div>
                 ))}
@@ -112,22 +108,22 @@ export default function AboutPage() {
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
                   <Phone className="w-5 h-5 text-[#ff8c42]" />
-                  <a href="tel:+918454871977" className="hover:text-[#ff8c42] transition-colors">
-                    +91 845 487 1977
+                  <a href="tel:+919321791489" className="hover:text-[#ff8c42] transition-colors">
+                    +91 93217 91489
                   </a>
                 </div>
                 <div className="flex items-center gap-3">
                   <Mail className="w-5 h-5 text-[#ff8c42]" />
                   <a
-                    href="mailto:contact@vineetlabdhe.com"
+                    href="mailto:labdhevinit@gmail.com"
                     className="hover:text-[#ff8c42] transition-colors"
                   >
-                    contact@vineetlabdhe.com
+                    labdhevinit@gmail.com
                   </a>
                 </div>
                 <div className="flex items-center gap-3">
                   <MapPin className="w-5 h-5 text-[#ff8c42]" />
-                  <span>Mumbai, Maharashtra, India</span>
+                  <span>Navi Mumbai, Maharashtra</span>
                 </div>
               </div>
 
@@ -151,6 +147,70 @@ export default function AboutPage() {
                     <Instagram className="w-5 h-5" />
                   </a>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Work Experience Section */}
+      <section className="py-20 px-4 md:px-8 border-t border-gray-800">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-4xl md:text-5xl font-bold uppercase tracking-wider mb-12 text-center">
+            Work Experience
+          </h2>
+
+          {/* Agency Work */}
+          <div className="mb-12">
+            <h3 className="text-2xl font-bold uppercase tracking-wider mb-6 text-[#ff8c42]">
+              Agency Work
+            </h3>
+            <div className="space-y-4">
+              <div className="border-l-2 border-[#ff8c42] pl-6">
+                <h4 className="text-xl font-bold">DOT MEDIA</h4>
+                <p className="text-gray-400">Videography, Reels</p>
+              </div>
+              <div className="border-l-2 border-[#ff8c42] pl-6">
+                <h4 className="text-xl font-bold">FLECK MEDIA</h4>
+                <p className="text-gray-400">Videography</p>
+              </div>
+              <div className="border-l-2 border-[#ff8c42] pl-6">
+                <h4 className="text-xl font-bold">FOUR BY FOUR EXP</h4>
+                <p className="text-gray-400">Videography & Photography</p>
+              </div>
+              <div className="border-l-2 border-[#ff8c42] pl-6">
+                <h4 className="text-xl font-bold">RED CHILLIES ENTERTAINMENT</h4>
+                <p className="text-gray-400">Videography & Photography</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Company Work */}
+          <div className="mb-12">
+            <h3 className="text-2xl font-bold uppercase tracking-wider mb-6 text-[#ff8c42]">
+              Company
+            </h3>
+            <div className="space-y-4">
+              <div className="border-l-2 border-[#ff8c42] pl-6">
+                <h4 className="text-xl font-bold">JUST FOCUS</h4>
+                <p className="text-gray-400">Photography & Videography</p>
+              </div>
+              <div className="border-l-2 border-[#ff8c42] pl-6">
+                <h4 className="text-xl font-bold">VARNI PRODUCTIONS</h4>
+                <p className="text-gray-400">Photography & Videography</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Freelance Work */}
+          <div>
+            <h3 className="text-2xl font-bold uppercase tracking-wider mb-6 text-[#ff8c42]">
+              Freelance Work
+            </h3>
+            <div className="space-y-4">
+              <div className="border-l-2 border-[#ff8c42] pl-6">
+                <h4 className="text-xl font-bold">World of Vibess</h4>
+                <p className="text-gray-400">Photography</p>
               </div>
             </div>
           </div>

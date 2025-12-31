@@ -18,6 +18,7 @@ const categoryTitles: Record<string, string> = {
   corporate: 'Corporate Events',
   people: 'People & Places',
   nightlife: 'Nightlife',
+  wedding: "Wedding & Others",
 };
 
 export default function GalleryPage() {

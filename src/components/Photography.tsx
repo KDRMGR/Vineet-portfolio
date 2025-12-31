@@ -1,5 +1,7 @@
-import { Users, Music, Building, Moon, Palette } from 'lucide-react';
+import { Users, Music, Building, Moon, Palette, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { supabase } from '../lib/supabase';
 
 const photographyCategories = [
   {
@@ -36,46 +38,76 @@ const photographyCategories = [
     icon: Moon,
     description: 'Night scene and club photography',
     image: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800&h=600&fit=crop'
+  },
+  {
+    name: 'Wedding & Others',
+    slug: 'wedding',
+    icon: Heart,
+    description: 'Wedding photography and special occasions',
+    image: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=800&h=600&fit=crop'
   }
 ];
 
+const categoryIds = photographyCategories.map((c) => c.slug);
+
 export default function Photography() {
+  const [covers, setCovers] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const load = async () => {
+      const { data } = await supabase
+        .from('gallery_images')
+        .select('*')
+        .in('category', categoryIds)
+        .order('order_index', { ascending: true });
+
+      const next: Record<string, string> = {};
+      for (const cat of categoryIds) {
+        const first = (data || []).find((row) => row.category === cat);
+        if (first?.image_url) next[cat] = first.image_url;
+      }
+      setCovers(next);
+    };
+
+    load();
+  }, []);
+
   return (
-    <section id="photography" className="min-h-screen bg-black py-16 sm:py-20 md:py-24 px-4 sm:px-6 md:px-8 lg:px-10">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-10 sm:mb-12 md:mb-16">
-          <h2 className="font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-semibold uppercase tracking-wider mb-3 sm:mb-4 text-white animate-fadeIn" style={{letterSpacing: '0.15em'}}>
+    <section id="photography" className="min-h-screen bg-white py-32 md:py-40 px-6 md:px-10">
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center mb-20 md:mb-24">
+          <h2 className="font-display text-4xl md:text-6xl lg:text-7xl font-light uppercase tracking-wider mb-8 text-gray-900 animate-fadeIn" style={{letterSpacing: '0.15em'}}>
             MY PROJECTS
           </h2>
-          <p className="text-center text-xs sm:text-sm md:text-base uppercase tracking-wider text-gray-400 animate-slideUp px-4" style={{letterSpacing: '0.2em'}}>
+          <p className="text-center text-sm md:text-base uppercase tracking-wider text-gray-600 animate-slideUp" style={{letterSpacing: '0.2em'}}>
             Click on respective categories to navigate
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 md:gap-12 max-w-6xl mx-auto">
           {photographyCategories.map((category, index) => {
             const IconComponent = category.icon;
             return (
               <Link
                 key={index}
                 to={`/gallery/${category.slug}`}
-                className="group relative overflow-hidden cursor-pointer transition-all duration-300 rounded-sm"
+                className="group relative overflow-hidden cursor-pointer transition-all duration-500 hover:scale-105"
               >
-                <div className="aspect-[4/3] relative overflow-hidden rounded-sm">
+                <div className="aspect-[4/3] relative overflow-hidden">
                   <img
-                    src={category.image}
+                    src={covers[category.slug] || category.image}
                     alt={category.name}
-                    className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
+                    className="w-full h-full object-cover transition-all duration-700 hover:scale-110"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 md:p-6">
-                      <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
-                        <IconComponent className="w-3 h-3 sm:w-4 sm:h-4 text-white flex-shrink-0" />
-                        <h3 className="font-display text-sm sm:text-base md:text-lg font-medium uppercase tracking-wide text-white" style={{letterSpacing: '0.1em'}}>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                    <div className="absolute bottom-0 left-0 right-0 p-8 md:p-10">
+                      <div className="flex items-center gap-3 mb-2">
+                        <IconComponent className="w-5 h-5 text-white" />
+                        <h3 className="font-display text-lg md:text-xl font-light uppercase tracking-wide text-white" style={{letterSpacing: '0.1em'}}>
                           {category.name}
                         </h3>
                       </div>
-                      <p className="text-[10px] sm:text-xs md:text-sm text-gray-200 opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{letterSpacing: '0.05em'}}>
+                      <p className="text-sm text-gray-200 opacity-0 group-hover:opacity-100 transition-opacity duration-500 font-light" style={{letterSpacing: '0.05em'}}>
                         {category.description}
                       </p>
                     </div>
