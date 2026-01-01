@@ -79,20 +79,16 @@ export default function CinematographyPage() {
       {/* Hero Section with Video */}
       <section className="relative min-h-screen flex items-center justify-center py-20 px-4 md:px-8 overflow-hidden">
         {/* Background Video */}
-        {heroVideo && (
-          <div className="absolute inset-0 z-0">
-            <video
-              autoPlay
-              muted
-              loop
-              playsInline
-              className="w-full h-full object-cover opacity-30"
-            >
-              <source src={heroVideo} type="video/mp4" />
-            </video>
-            <div className="absolute inset-0 bg-black/60"></div>
-          </div>
-        )}
+        <div className="absolute inset-0 z-0">
+          <iframe
+            className="w-full h-full object-cover opacity-60"
+            src="https://www.youtube.com/embed/8_tvtptLeZk?autoplay=1&mute=1&loop=1&playlist=8_tvtptLeZk&controls=0&showinfo=0&modestbranding=1&rel=0"
+            title="Cinematography Hero Video"
+            allow="autoplay; encrypted-media"
+            style={{ border: 'none', pointerEvents: 'none' }}
+          />
+          <div className="absolute inset-0 bg-black/40"></div>
+        </div>
 
         {/* Hero Content */}
         <div className="relative z-10 text-center">
@@ -119,16 +115,6 @@ export default function CinematographyPage() {
             </p>
           </div>
         </div>
-
-        {/* Play Button for Hero Video */}
-        {heroVideo && (
-          <button
-            onClick={() => setSelectedVideo(heroVideo)}
-            className="absolute bottom-8 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/40 transition-all group"
-          >
-            <PlayCircle className="w-8 h-8 text-white group-hover:text-gray-200" />
-          </button>
-        )}
       </section>
 
       {/* Services Section */}

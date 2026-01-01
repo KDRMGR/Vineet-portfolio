@@ -8,7 +8,7 @@ export default function Hero() {
   const [heroName, setHeroName] = useState('Vineet Labdhe');
   const [heroSubtitle, setHeroSubtitle] = useState('Visual Storyteller');
   const [heroTagline, setHeroTagline] = useState('Photographer • Cinematographer');
-  const [backgroundUrl, setBackgroundUrl] = useState('https://images.unsplash.com/photo-1519741497674-611481863552?w=1920&h=1080&fit=crop');
+  const [backgroundUrl, setBackgroundUrl] = useState('/ref/home_hero.JPEG');
   const [portraitUrl, setPortraitUrl] = useState('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&h=600&fit=crop');
   const [showContent, setShowContent] = useState(false);
 
@@ -68,23 +68,23 @@ export default function Hero() {
       {/* Background Video/Image */}
       <div className="absolute inset-0 z-0">
         {backgroundUrl.match(/\.(mp4|webm|ogg)$/i) ? (
-          <video autoPlay muted loop playsInline className="w-full h-full object-cover opacity-30">
+          <video autoPlay muted loop playsInline className="w-full h-full object-cover opacity-40">
             <source src={backgroundUrl} />
           </video>
         ) : (
           <img
             src={backgroundUrl}
             alt="Background"
-            className="w-full h-full object-cover opacity-30"
+            className="w-full h-full object-cover opacity-40"
           />
         )}
-        <div className="absolute inset-0 bg-black/50"></div>
+        <div className="absolute inset-0 bg-black/40"></div>
       </div>
 
       {/* Hero Content */}
-      <div className="relative z-10 flex items-center justify-center pointer-events-none">
+      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen pointer-events-none">
         <div className="text-center">
-          <h2 className="font-display text-xs sm:text-sm md:text-base font-light tracking-[0.4em] mb-8 sm:mb-10 text-white uppercase overflow-hidden" style={{letterSpacing: '0.4em'}}>
+          <h2 className="font-display text-xs sm:text-sm md:text-base font-light tracking-[0.4em] mb-8 sm:mb-10 md:mb-12 text-white uppercase overflow-hidden" style={{letterSpacing: '0.4em'}}>
             <span className={`inline-block ${showContent ? 'animate-slideDown' : 'opacity-0'}`}>
               {heroName.split('').map((char, i) => (
                 <span
@@ -101,24 +101,27 @@ export default function Hero() {
             </span>
           </h2>
 
-          <div className={`relative mx-auto mb-6 sm:mb-8 w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 overflow-hidden rounded-full border-2 border-white/20 ${showContent ? 'animate-scaleIn' : 'opacity-0 scale-50'}`}
-               style={{animationDelay: '0.3s', animationFillMode: 'forwards'}}>
-            <img
-              src={portraitUrl}
-              alt={heroName}
-              className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
-            />
-          </div>
+          {/* Portfolio Text with Image Behind */}
+          <div className="relative flex items-center justify-center min-h-[16rem] sm:min-h-[20rem] md:min-h-[24rem]">
+            {/* Image positioned behind and centered */}
+            <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 sm:w-56 sm:h-56 md:w-64 md:h-64 overflow-hidden border-2 border-white/20 ${showContent ? 'animate-scaleIn' : 'opacity-0 scale-50'}`}
+                 style={{animationDelay: '0.3s', animationFillMode: 'forwards', zIndex: 1}}>
+              <img
+                src={portraitUrl}
+                alt={heroName}
+                className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
+              />
+            </div>
 
-          {/* Portfolio Text - Outside Image */}
-          <div className="mb-6 sm:mb-8">
+            {/* Portfolio text in front */}
             <h1
-              className="font-display text-6xl sm:text-8xl md:text-9xl lg:text-[10rem] font-black uppercase tracking-[0.12em] leading-none"
+              className="relative font-display text-6xl sm:text-8xl md:text-9xl lg:text-[10rem] font-black uppercase tracking-[0.12em] leading-none"
               style={{
                 letterSpacing: '0.12em',
                 fontFamily: 'Anton, "Bebas Neue", "League Spartan", sans-serif',
                 WebkitTextStroke: '2px rgba(255, 255, 255, 0.3)',
-                color: 'transparent'
+                color: 'transparent',
+                zIndex: 2
               }}
             >
               {'PORTFOLIO'.split('').map((char, i) => (
@@ -136,16 +139,6 @@ export default function Hero() {
               ))}
             </h1>
           </div>
-
-          <p className={`font-sans text-base sm:text-lg md:text-xl tracking-[0.25em] mb-2 text-gray-300 font-light uppercase ${showContent ? 'animate-fadeInUp' : 'opacity-0'}`}
-             style={{letterSpacing: '0.25em', animationDelay: '1.5s', animationFillMode: 'forwards'}}>
-            {heroSubtitle}
-          </p>
-
-          <p className={`font-sans text-xs sm:text-sm tracking-[0.2em] text-gray-500 font-light uppercase ${showContent ? 'animate-fadeInUp' : 'opacity-0'}`}
-             style={{letterSpacing: '0.2em', animationDelay: '1.7s', animationFillMode: 'forwards'}}>
-            {heroTagline}
-          </p>
         </div>
       </div>
 
