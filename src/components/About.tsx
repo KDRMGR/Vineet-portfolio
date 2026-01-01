@@ -9,7 +9,7 @@ export default function About() {
     'I am a storytelling geek based in Mumbai. The course of my journey has led me to discover my ability to capture moments and create enticing visuals out of them because the power of a sharp eye met with handling a camera well ascertains me to be able to tell a powerful story.'
   );
   const [paragraph2, setParagraph2] = useState('');
-  const [imageUrl, setImageUrl] = useState('/ref/WhatsApp%20Image%202025-12-27%20at%208.08.25%20PM.jpeg');
+  const [imageUrl, setImageUrl] = useState('/ref/about.JPEG');
 
   useEffect(() => {
     const load = async () => {
@@ -25,6 +25,7 @@ export default function About() {
         if (row.key === 'paragraph2') setParagraph2(row.value);
       }
 
+      /*
       const { data: aboutImage } = await supabase
         .from('gallery_images')
         .select('image_url')
@@ -33,6 +34,7 @@ export default function About() {
         .limit(1);
 
       if (aboutImage?.[0]?.image_url) setImageUrl(aboutImage[0].image_url);
+      */
     };
 
     load();

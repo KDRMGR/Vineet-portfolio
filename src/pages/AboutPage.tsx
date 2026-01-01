@@ -1,13 +1,22 @@
 export default function AboutPage() {
+  const aboutImage = '/ref/about.JPEG';
+
   return (
-    <div className="w-full h-screen bg-black pt-[100px] overflow-hidden">
-      <iframe
-        src="https://ugc-portfolio-diya.my.canva.site/photography-portfolio-website-in-black-and-white-grey-dark-modern-minimal-style"
-        className="w-full h-full border-0"
-        title="About Vineet Labdhe"
-        allow="fullscreen"
-        loading="lazy"
-      />
-    </div>
+    <section id="about" className="min-h-screen bg-black flex items-center justify-center py-20 md:py-32 px-6 md:px-10">
+      <div className="w-full max-w-6xl mx-auto">
+        <img
+          src={aboutImage}
+          alt="About"
+          className="w-full h-auto rounded-lg shadow-2xl"
+          onError={(e) => {
+            console.error('Image failed to load:', aboutImage);
+            console.error('Image error:', e);
+          }}
+          onLoad={() => {
+            console.log('Image loaded successfully:', aboutImage);
+          }}
+        />
+      </div>
+    </section>
   );
 }
