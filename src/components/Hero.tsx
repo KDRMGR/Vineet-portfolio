@@ -9,7 +9,7 @@ export default function Hero() {
   const [heroSubtitle, setHeroSubtitle] = useState('Visual Storyteller');
   const [heroTagline, setHeroTagline] = useState('Photographer • Cinematographer');
   const [backgroundUrl, setBackgroundUrl] = useState('/ref/home_hero.JPEG');
-  const [portraitUrl, setPortraitUrl] = useState('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&h=600&fit=crop');
+  const [portraitUrl, setPortraitUrl] = useState('/ref/hero.JPG');
   const [showContent, setShowContent] = useState(false);
 
   useEffect(() => {
@@ -84,7 +84,8 @@ export default function Hero() {
       {/* Hero Content */}
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen pointer-events-none">
         <div className="text-center">
-          <h2 className="font-display text-xs sm:text-sm md:text-base font-light tracking-[0.4em] mb-8 sm:mb-10 md:mb-12 text-white uppercase overflow-hidden" style={{letterSpacing: '0.4em'}}>
+          {/* Name at the top */}
+          <h2 className="font-display text-xs sm:text-sm md:text-base font-light tracking-[0.4em] mb-6 sm:mb-8 text-white uppercase overflow-hidden" style={{letterSpacing: '0.4em'}}>
             <span className={`inline-block ${showContent ? 'animate-slideDown' : 'opacity-0'}`}>
               {heroName.split('').map((char, i) => (
                 <span
@@ -101,44 +102,40 @@ export default function Hero() {
             </span>
           </h2>
 
-          {/* Portfolio Text with Image Behind */}
-          <div className="relative flex items-center justify-center min-h-[16rem] sm:min-h-[20rem] md:min-h-[24rem]">
-            {/* Image positioned behind and centered */}
-            <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 sm:w-56 sm:h-56 md:w-64 md:h-64 overflow-hidden border-2 border-white/20 ${showContent ? 'animate-scaleIn' : 'opacity-0 scale-50'}`}
-                 style={{animationDelay: '0.3s', animationFillMode: 'forwards', zIndex: 1}}>
-              <img
-                src={portraitUrl}
-                alt={heroName}
-                className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
-              />
-            </div>
-
-            {/* Portfolio text in front */}
-            <h1
-              className="relative font-display text-6xl sm:text-8xl md:text-9xl lg:text-[10rem] font-black uppercase tracking-[0.12em] leading-none"
-              style={{
-                letterSpacing: '0.12em',
-                fontFamily: 'Anton, "Bebas Neue", "League Spartan", sans-serif',
-                WebkitTextStroke: '2px rgba(255, 255, 255, 0.3)',
-                color: 'transparent',
-                zIndex: 2
-              }}
-            >
-              {'PORTFOLIO'.split('').map((char, i) => (
-                <span
-                  key={i}
-                  className="inline-block"
-                  style={{
-                    animation: showContent ? `slideInChar 0.8s cubic-bezier(0.4, 0, 0.2, 1) ${0.5 + i * 0.08}s forwards` : 'none',
-                    opacity: 0,
-                    transform: 'translateY(100px)'
-                  }}
-                >
-                  {char}
-                </span>
-              ))}
-            </h1>
+          {/* Portrait Image in the middle */}
+          <div className={`relative mx-auto -mb-8 sm:-mb-12 md:-mb-16 w-48 h-48 sm:w-56 sm:h-56 md:w-64 md:h-64 overflow-hidden border-2 border-white/20 ${showContent ? 'animate-scaleIn' : 'opacity-0 scale-50'}`}
+               style={{animationDelay: '0.3s', animationFillMode: 'forwards'}}>
+            <img
+              src={portraitUrl}
+              alt={heroName}
+              className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
+            />
           </div>
+
+          {/* Portfolio Text at the bottom */}
+          <h1
+            className="font-display text-6xl sm:text-8xl md:text-9xl lg:text-[10rem] font-black uppercase tracking-[0.12em] leading-none"
+            style={{
+              letterSpacing: '0.12em',
+              fontFamily: 'Anton, "Bebas Neue", "League Spartan", sans-serif',
+              WebkitTextStroke: '2px rgba(255, 255, 255, 0.3)',
+              color: 'transparent'
+            }}
+          >
+            {'PORTFOLIO'.split('').map((char, i) => (
+              <span
+                key={i}
+                className="inline-block"
+                style={{
+                  animation: showContent ? `slideInChar 0.8s cubic-bezier(0.4, 0, 0.2, 1) ${0.5 + i * 0.08}s forwards` : 'none',
+                  opacity: 0,
+                  transform: 'translateY(100px)'
+                }}
+              >
+                {char}
+              </span>
+            ))}
+          </h1>
         </div>
       </div>
 

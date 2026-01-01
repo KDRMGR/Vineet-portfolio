@@ -81,11 +81,24 @@ export default function CinematographyPage() {
         {/* Background Video */}
         <div className="absolute inset-0 z-0">
           <iframe
-            className="w-full h-full object-cover opacity-60"
-            src="https://www.youtube.com/embed/8_tvtptLeZk?autoplay=1&mute=1&loop=1&playlist=8_tvtptLeZk&controls=0&showinfo=0&modestbranding=1&rel=0"
+            className="w-full h-full opacity-60"
+            src="https://www.youtube.com/embed/8_tvtptLeZk?autoplay=1&mute=1&loop=1&playlist=8_tvtptLeZk&controls=0&showinfo=0&modestbranding=1&rel=0&vq=hd1080&playsinline=1"
             title="Cinematography Hero Video"
-            allow="autoplay; encrypted-media"
-            style={{ border: 'none', pointerEvents: 'none' }}
+            allow="autoplay; encrypted-media; fullscreen"
+            allowFullScreen
+            style={{
+              border: 'none',
+              pointerEvents: 'none',
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              width: '100vw',
+              height: '100vh',
+              transform: 'translate(-50%, -50%)',
+              minWidth: '100%',
+              minHeight: '100%',
+              objectFit: 'cover'
+            }}
           />
           <div className="absolute inset-0 bg-black/40"></div>
         </div>
