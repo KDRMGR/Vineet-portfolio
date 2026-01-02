@@ -1,26 +1,54 @@
 import { useEffect, useState } from 'react';
 import { supabase, subscribeToCmsUpdates } from '../lib/supabase';
 import { Video, Film, Play, PlayCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
-interface VideoProject {
-  id: string;
-  category: string;
-  image_url: string;
-  title: string | null;
-  description: string | null;
-  order_index: number;
-  is_video?: boolean;
-}
+const defaultCinematographyCategories = [
+  { id: 'cinematography-highlight-reels', name: 'Highlight Reels' },
+  { id: 'cinematography-wedding-social-media', name: 'Wedding Social Media' },
+  { id: 'cinematography-short-films', name: 'Short Films' },
+  { id: 'cinematography-social-media-event-decor', name: 'Social Media Event Decor' },
+  { id: 'cinematography-tata-marathon', name: 'Tata Marathon' },
+  { id: 'cinematography-starbucks', name: 'Starbucks' },
+  { id: 'cinematography-others', name: 'Others' },
+  { id: 'corporate', name: 'Corporate Events' },
+  { id: 'concerts', name: 'Concerts' },
+  { id: 'commercial', name: 'Commercial' },
+  { id: 'events', name: 'Events' },
+  { id: 'documentary', name: 'Documentary' },
+  { id: 'live', name: 'Live Shows' },
+];
 
 export default function CinematographyPage() {
-  const [projects, setProjects] = useState<VideoProject[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
   const [heroVideo, setHeroVideo] = useState<string | null>(null);
   const [heading, setHeading] = useState('Cinematography');
   const [subheading, setSubheading] = useState('Visual Storytelling Through Motion');
+  const [categories, setCategories] = useState(defaultCinematographyCategories);
+  const [covers, setCovers] = useState<Record<string, string>>({});
 
   const isVideoFile = (url: string) => /\.(mp4|webm|ogg)$/i.test(url);
+
+  const safeParseCategoryList = (raw: string | undefined) => {
+    if (!raw) return null;
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      if (!Array.isArray(parsed)) return null;
+      const next: Array<{ id: string; name: string }> = [];
+      for (const item of parsed) {
+        if (!item || typeof item !== 'object') continue;
+        const maybe = item as { id?: unknown; name?: unknown };
+        if (typeof maybe.id !== 'string' || typeof maybe.name !== 'string') continue;
+        const id = maybe.id.trim();
+        const name = maybe.name.trim();
+        if (!id || !name) continue;
+        next.push({ id, name });
+      }
+      return next.length ? next : null;
+    } catch {
+      return null;
+    }
+  };
 
   const getYouTubeVideoId = (url: string) => {
     try {
@@ -74,19 +102,30 @@ export default function CinematographyPage() {
   useEffect(() => {
     let active = true;
 
+    const fetchCovers = async (cats: typeof defaultCinematographyCategories) => {
+      const ids = cats.map((c) => c.id);
+      const { data } = await supabase
+        .from('gallery_images')
+        .select('*')
+        .in('category', ids)
+        .order('order_index', { ascending: true });
+
+      if (!active) return;
+      const next: Record<string, string> = {};
+      for (const id of ids) {
+        const first = (data || []).find((row) => row.category === id);
+        if (first?.image_url) next[id] = first.image_url;
+      }
+      setCovers(next);
+    };
+
     const load = async () => {
       setLoading(true);
 
       const [
-        { data: projectsData },
         { data: heroData },
         { data: contentData },
       ] = await Promise.all([
-        supabase
-          .from('gallery_images')
-          .select('*')
-          .in('category', ['concerts', 'corporate', 'commercial', 'events', 'documentary', 'live'])
-          .order('order_index', { ascending: true }),
         supabase
           .from('gallery_images')
           .select('image_url')
@@ -97,22 +136,28 @@ export default function CinematographyPage() {
           .from('content')
           .select('key,value')
           .eq('section', 'cinematography')
-          .in('key', ['heading', 'subheading']),
+          .in('key', ['heading', 'subheading', 'categories']),
       ]);
 
       if (!active) return;
 
-      setProjects((projectsData as VideoProject[]) || []);
       setHeroVideo(heroData?.[0]?.image_url || null);
 
       let nextHeading = 'Cinematography';
       let nextSubheading = 'Visual Storytelling Through Motion';
+      let nextCategories = defaultCinematographyCategories;
       for (const row of contentData || []) {
         if (row.key === 'heading') nextHeading = row.value;
         if (row.key === 'subheading') nextSubheading = row.value;
+        if (row.key === 'categories') {
+          const parsed = safeParseCategoryList(row.value);
+          if (parsed) nextCategories = parsed;
+        }
       }
       setHeading(nextHeading);
       setSubheading(nextSubheading);
+      setCategories(nextCategories);
+      await fetchCovers(nextCategories);
       setLoading(false);
     };
 
@@ -200,6 +245,60 @@ export default function CinematographyPage() {
         </div>
       </section>
 
+      {/* Projects Grid */}
+      <section className="py-32 md:py-40 px-4 md:px-8 bg-neutral-900">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="font-display text-4xl md:text-6xl font-light uppercase tracking-wider mb-20 md:mb-24 text-center" style={{letterSpacing: '0.15em'}}>
+            Explore Categories
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 md:gap-12">
+            {categories.map((category) => (
+              <Link
+                key={category.id}
+                to={`/gallery/${category.id}`}
+                className="group relative overflow-hidden cursor-pointer transition-all duration-500 hover:scale-105"
+              >
+                <div className="aspect-[4/3] relative overflow-hidden">
+                  {covers[category.id] ? (
+                    isVideoFile(covers[category.id]) ? (
+                      <video
+                        src={covers[category.id]}
+                        className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
+                        muted
+                        loop
+                        playsInline
+                      />
+                    ) : getEmbedUrl(covers[category.id]) ? (
+                      <div className="w-full h-full bg-gradient-to-b from-gray-900 to-black flex items-center justify-center transition-all duration-700 group-hover:scale-110">
+                        <PlayCircle className="w-16 h-16 text-white/80" />
+                      </div>
+                    ) : (
+                      <img
+                        src={covers[category.id]}
+                        alt={category.name}
+                        className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
+                      />
+                    )
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-b from-gray-900 to-black" />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                    <div className="absolute bottom-0 left-0 right-0 p-8 md:p-10">
+                      <div className="flex items-center gap-3 mb-2">
+                        <PlayCircle className="w-6 h-6 text-white" />
+                        <h3 className="font-display text-lg md:text-xl font-light uppercase tracking-wide text-white" style={{letterSpacing: '0.1em'}}>
+                          {category.name}
+                        </h3>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Services Section */}
       <section className="py-32 md:py-40 px-4 md:px-8">
         <div className="max-w-6xl mx-auto">
@@ -247,103 +346,6 @@ export default function CinematographyPage() {
           </div>
         </div>
       </section>
-
-      {/* Projects Grid */}
-      <section className="py-32 md:py-40 px-4 md:px-8 bg-neutral-900">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="font-display text-4xl md:text-6xl font-light uppercase tracking-wider mb-20 md:mb-24 text-center" style={{letterSpacing: '0.15em'}}>
-            Featured Projects
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 md:gap-12">
-            {projects.map((project) => (
-              <div
-                key={project.id}
-                className="group relative overflow-hidden cursor-pointer"
-                onClick={() => setSelectedVideo(project.image_url)}
-              >
-                <div className="aspect-[4/3] relative overflow-hidden">
-                  {isVideoFile(project.image_url) ? (
-                    <video
-                      src={project.image_url}
-                      className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
-                      muted
-                      loop
-                      playsInline
-                    />
-                  ) : getEmbedUrl(project.image_url) ? (
-                    <div className="w-full h-full bg-gradient-to-b from-gray-900 to-black flex items-center justify-center transition-all duration-700 group-hover:scale-110">
-                      <PlayCircle className="w-16 h-16 text-white/80" />
-                    </div>
-                  ) : (
-                    <img
-                      src={project.image_url}
-                      alt={project.title || 'Project'}
-                      className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
-                    />
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                    <div className="absolute bottom-0 left-0 right-0 p-8 md:p-10">
-                      <div className="flex items-center gap-3 mb-2">
-                        <PlayCircle className="w-6 h-6 text-white" />
-                        <h3 className="font-display text-lg md:text-xl font-light uppercase tracking-wide text-white" style={{letterSpacing: '0.1em'}}>
-                          {project.title || 'Untitled Project'}
-                        </h3>
-                      </div>
-                      {project.description && (
-                        <p className="text-sm text-gray-200 opacity-0 group-hover:opacity-100 transition-opacity duration-500 font-light" style={{letterSpacing: '0.05em'}}>
-                          {project.description}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Video Modal */}
-      {selectedVideo && (
-        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
-          <div className="relative max-w-4xl w-full">
-            <button
-              onClick={() => setSelectedVideo(null)}
-              className="absolute -top-12 right-0 text-white hover:text-gray-300 transition-colors"
-            >
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-            <div className="aspect-video bg-black rounded-lg overflow-hidden">
-              {isVideoFile(selectedVideo) ? (
-                <video
-                  src={selectedVideo}
-                  controls
-                  autoPlay
-                  playsInline
-                  className="w-full h-full object-contain"
-                />
-              ) : getEmbedUrl(selectedVideo) ? (
-                <iframe
-                  src={getEmbedUrl(selectedVideo) || undefined}
-                  title="Video"
-                  allow="autoplay; encrypted-media; fullscreen"
-                  allowFullScreen
-                  className="w-full h-full"
-                  style={{ border: 'none' }}
-                />
-              ) : (
-                <img
-                  src={selectedVideo}
-                  alt="Project"
-                  className="w-full h-full object-contain"
-                />
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

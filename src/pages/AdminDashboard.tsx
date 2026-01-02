@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, LayoutType, publishCmsUpdate } from '../lib/supabase';
-import { LogOut, Trash2, Plus, Image as ImageIcon, Layout, Save, Eye, Pencil } from 'lucide-react';
+import { LogOut, Trash2, Plus, Image as ImageIcon, Layout, Save, Eye, Pencil, ArrowUp, ArrowDown } from 'lucide-react';
 
 interface ContentItem {
   id: string;
@@ -18,6 +18,11 @@ interface GalleryImage {
   title: string | null;
   description: string | null;
   order_index: number;
+}
+
+interface CategoryItem {
+  id: string;
+  name: string;
 }
 
 export default function AdminDashboard() {
@@ -53,6 +58,8 @@ export default function AdminDashboard() {
   const [editingImageId, setEditingImageId] = useState<string | null>(null);
   const [imageEditDraft, setImageEditDraft] = useState({ title: '', description: '' });
   const [draggingImageId, setDraggingImageId] = useState<string | null>(null);
+  const [galleryOrderMode, setGalleryOrderMode] = useState<'manual' | 'reverse' | 'title_asc' | 'title_desc'>('manual');
+  const [newCategoryDraft, setNewCategoryDraft] = useState({ id: '', name: '' });
 
   const categories = [
     { id: 'fashion', name: 'Fashion & Lifestyle' },
@@ -63,7 +70,14 @@ export default function AdminDashboard() {
     { id: 'wedding', name: "Wedding & Others" },
   ];
 
-  const cinematographyCategories = [
+  const defaultCinematographyCategories: CategoryItem[] = [
+    { id: 'cinematography-highlight-reels', name: 'Highlight Reels' },
+    { id: 'cinematography-wedding-social-media', name: 'Wedding Social Media' },
+    { id: 'cinematography-short-films', name: 'Short Films' },
+    { id: 'cinematography-social-media-event-decor', name: 'Social Media Event Decor' },
+    { id: 'cinematography-tata-marathon', name: 'Tata Marathon' },
+    { id: 'cinematography-starbucks', name: 'Starbucks' },
+    { id: 'cinematography-others', name: 'Others' },
     { id: 'corporate', name: 'Corporate Events' },
     { id: 'concerts', name: 'Concerts' },
     { id: 'commercial', name: 'Commercial' },
@@ -72,7 +86,11 @@ export default function AdminDashboard() {
     { id: 'live', name: 'Live Shows' },
   ];
 
-  const photographyCategories = [
+  const defaultPhotographyCategories: CategoryItem[] = [
+    { id: 'photography-entertainment', name: 'Entertainment' },
+    { id: 'photography-events', name: 'Events' },
+    { id: 'photography-street', name: 'Street Photography' },
+    { id: 'photography-product', name: 'Product Photography' },
     { id: 'fashion', name: 'Fashion & Lifestyle' },
     { id: 'people', name: 'People & Places' },
     { id: 'concerts', name: 'Concerts' },
@@ -172,6 +190,84 @@ export default function AdminDashboard() {
 
   const contentKey = (section: string, key: string) => `${section}:${key}`;
 
+  const safeParseCategoryList = (raw: string | undefined, fallback: CategoryItem[]) => {
+    if (!raw) return fallback;
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      if (!Array.isArray(parsed)) return fallback;
+      const next: CategoryItem[] = [];
+      for (const item of parsed) {
+        if (!item || typeof item !== 'object') continue;
+        const maybe = item as { id?: unknown; name?: unknown };
+        if (typeof maybe.id !== 'string' || typeof maybe.name !== 'string') continue;
+        const id = maybe.id.trim();
+        const name = maybe.name.trim();
+        if (!id || !name) continue;
+        next.push({ id, name });
+      }
+      return next.length ? next : fallback;
+    } catch {
+      return fallback;
+    }
+  };
+
+  const categoriesKeyForSection = (section: 'photography' | 'cinematography') => contentKey(section, 'categories');
+
+  const getCategoriesForSection = (section: 'photography' | 'cinematography') => {
+    const fallback = section === 'photography' ? defaultPhotographyCategories : defaultCinematographyCategories;
+    return safeParseCategoryList(contentDraft[categoriesKeyForSection(section)], fallback);
+  };
+
+  const setCategoriesForSection = (section: 'photography' | 'cinematography', next: CategoryItem[]) => {
+    const key = categoriesKeyForSection(section);
+    setContentDraft((prev) => ({ ...prev, [key]: JSON.stringify(next) }));
+    setHasUnsavedChanges(true);
+  };
+
+  const addCategoryToSection = (section: 'photography' | 'cinematography') => {
+    const id = newCategoryDraft.id.trim();
+    const name = newCategoryDraft.name.trim();
+    if (!id || !name) return;
+    const current = getCategoriesForSection(section);
+    if (current.some((c) => c.id === id)) {
+      showToast('error', 'Category id already exists');
+      return;
+    }
+    setCategoriesForSection(section, [...current, { id, name }]);
+    setNewCategoryDraft({ id: '', name: '' });
+  };
+
+  const renameCategoryInSection = (section: 'photography' | 'cinematography', id: string, nextName: string) => {
+    const name = nextName;
+    const current = getCategoriesForSection(section);
+    const next = current.map((c) => (c.id === id ? { ...c, name } : c));
+    setCategoriesForSection(section, next);
+  };
+
+  const moveCategoryInSection = (section: 'photography' | 'cinematography', id: string, dir: -1 | 1) => {
+    const current = getCategoriesForSection(section);
+    const fromIdx = current.findIndex((c) => c.id === id);
+    if (fromIdx === -1) return;
+    const toIdx = fromIdx + dir;
+    if (toIdx < 0 || toIdx >= current.length) return;
+    const next = [...current];
+    const [moved] = next.splice(fromIdx, 1);
+    next.splice(toIdx, 0, moved);
+    setCategoriesForSection(section, next);
+  };
+
+  const deleteCategoryInSection = (section: 'photography' | 'cinematography', id: string) => {
+    const ok = confirm('Remove this category from the page? Existing media will not be deleted.');
+    if (!ok) return;
+    const current = getCategoriesForSection(section);
+    const next = current.filter((c) => c.id !== id);
+    setCategoriesForSection(section, next);
+    if (selectedCategory === id) {
+      const first = next[0]?.id;
+      if (first) setSelectedCategory(first);
+    }
+  };
+
   const resetDrafts = () => {
     setContentDraft(contentOriginal);
     setGalleryDraft(galleryImages);
@@ -206,7 +302,13 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (!user) return;
-    if (activeTab === 'content' || activeTab === 'pages' || activeTab === 'media') {
+    if (
+      activeTab === 'content' ||
+      activeTab === 'pages' ||
+      activeTab === 'media' ||
+      activeTab === 'photography' ||
+      activeTab === 'cinematography'
+    ) {
       fetchContent();
     }
   }, [user, activeTab]);
@@ -218,6 +320,22 @@ export default function AdminDashboard() {
       fetchGalleryLayout();
     }
   }, [user, activeTab, selectedCategory]);
+
+  const photographyCategories = getCategoriesForSection('photography');
+  const cinematographyCategories = getCategoriesForSection('cinematography');
+
+  useEffect(() => {
+    setNewCategoryDraft({ id: '', name: '' });
+  }, [activeTab]);
+
+  useEffect(() => {
+    const options =
+      activeTab === 'cinematography' ? cinematographyCategories : activeTab === 'photography' ? photographyCategories : categories;
+    if (!options.some((c) => c.id === selectedCategory)) {
+      const next = options[0]?.id;
+      if (next) setSelectedCategory(next);
+    }
+  }, [activeTab, cinematographyCategories, photographyCategories, selectedCategory]);
 
   useEffect(() => {
     if (!user) return;
@@ -482,6 +600,23 @@ export default function AdminDashboard() {
     return items.map((item, idx) => ({ ...item, order_index: idx }));
   };
 
+  const applyGalleryOrder = (items: GalleryImage[]) => {
+    setGalleryDraft(normalizeGalleryOrder(items));
+    setHasUnsavedChanges(true);
+  };
+
+  const moveGalleryItem = (id: string, direction: -1 | 1) => {
+    const fromIdx = galleryDraft.findIndex((g) => g.id === id);
+    if (fromIdx === -1) return;
+    const toIdx = fromIdx + direction;
+    if (toIdx < 0 || toIdx >= galleryDraft.length) return;
+    const next = [...galleryDraft];
+    const [moved] = next.splice(fromIdx, 1);
+    next.splice(toIdx, 0, moved);
+    applyGalleryOrder(next);
+    setGalleryOrderMode('manual');
+  };
+
   const openImageEditor = (id: string) => {
     const img = galleryDraft.find((g) => g.id === id);
     if (!img) return;
@@ -553,11 +688,37 @@ export default function AdminDashboard() {
         setCurrentLayout(layoutDraft);
       }
 
+      const contentUpdates = Object.entries(contentDraft).filter(
+        ([key, value]) => (value ?? '') !== (contentOriginal[key] ?? '')
+      );
+      if (contentUpdates.length > 0) {
+        const updated_at = new Date().toISOString();
+        const payload = contentUpdates
+          .map(([compound, value]) => {
+            const idx = compound.indexOf(':');
+            if (idx <= 0) return null;
+            const section = compound.slice(0, idx);
+            const key = compound.slice(idx + 1);
+            if (!section || !key) return null;
+            return { section, key, value: value ?? '', updated_at };
+          })
+          .filter(Boolean) as Array<{ section: string; key: string; value: string; updated_at: string }>;
+
+        if (payload.length > 0) {
+          const { error } = await supabase.from('content').upsert(payload, { onConflict: 'section,key' });
+          if (error) {
+            showToast('error', 'Error saving content');
+            return;
+          }
+        }
+      }
+
       showToast('success', 'Changes saved successfully');
       publishCmsUpdate();
       setHasUnsavedChanges(false);
       fetchGalleryImages();
       fetchGalleryLayout();
+      fetchContent();
     } finally {
       setIsSaving(false);
     }
@@ -1073,6 +1234,91 @@ export default function AdminDashboard() {
 
         {(activeTab === 'gallery' || activeTab === 'cinematography' || activeTab === 'photography') && (
           <div>
+            {(activeTab === 'cinematography' || activeTab === 'photography') &&
+              (() => {
+                const section = activeTab === 'photography' ? 'photography' : 'cinematography';
+                const list = section === 'photography' ? photographyCategories : cinematographyCategories;
+                return (
+                  <div className="mb-10 border-2 border-gray-800 p-6">
+                    <h2 className="text-2xl font-bold uppercase tracking-wider mb-6 text-[#ff8c42]">
+                      {section} Categories
+                    </h2>
+                    <div className="space-y-4">
+                      {list.map((cat, idx) => (
+                        <div key={cat.id} className="border-2 border-gray-800 p-4">
+                          <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr_160px] gap-4 items-center">
+                            <div className="text-sm uppercase tracking-wider text-gray-400 break-all">
+                              {cat.id}
+                            </div>
+                            <input
+                              type="text"
+                              value={cat.name}
+                              onChange={(e) => renameCategoryInSection(section, cat.id, e.target.value)}
+                              className="w-full px-4 py-3 bg-transparent border-2 border-gray-700 focus:border-[#ff8c42] outline-none transition-colors"
+                            />
+                            <div className="flex gap-2 justify-end">
+                              <button
+                                onClick={() => moveCategoryInSection(section, cat.id, -1)}
+                                disabled={idx === 0}
+                                className="px-3 py-2 border-2 border-gray-700 text-gray-300 hover:border-[#ff8c42] hover:text-[#ff8c42] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                                type="button"
+                                aria-label="Move category up"
+                              >
+                                <ArrowUp className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => moveCategoryInSection(section, cat.id, 1)}
+                                disabled={idx === list.length - 1}
+                                className="px-3 py-2 border-2 border-gray-700 text-gray-300 hover:border-[#ff8c42] hover:text-[#ff8c42] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                                type="button"
+                                aria-label="Move category down"
+                              >
+                                <ArrowDown className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => deleteCategoryInSection(section, cat.id)}
+                                className="px-3 py-2 border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-all"
+                                type="button"
+                                aria-label="Remove category"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+
+                      <div className="border-2 border-gray-800 p-4">
+                        <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr_180px] gap-4 items-center">
+                          <input
+                            type="text"
+                            value={newCategoryDraft.id}
+                            onChange={(e) => setNewCategoryDraft((prev) => ({ ...prev, id: e.target.value }))}
+                            placeholder="category-id"
+                            className="w-full px-4 py-3 bg-transparent border-2 border-gray-700 focus:border-[#ff8c42] outline-none transition-colors"
+                          />
+                          <input
+                            type="text"
+                            value={newCategoryDraft.name}
+                            onChange={(e) => setNewCategoryDraft((prev) => ({ ...prev, name: e.target.value }))}
+                            placeholder="Category name"
+                            className="w-full px-4 py-3 bg-transparent border-2 border-gray-700 focus:border-[#ff8c42] outline-none transition-colors"
+                          />
+                          <button
+                            onClick={() => addCategoryToSection(section)}
+                            disabled={!newCategoryDraft.id.trim() || !newCategoryDraft.name.trim()}
+                            className="px-6 py-3 border-2 border-[#ff8c42] text-[#ff8c42] font-bold uppercase tracking-wider hover:bg-[#ff8c42] hover:text-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            type="button"
+                          >
+                            Add
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
             <div className="mb-8">
               <label className="block text-sm uppercase tracking-wider mb-4">
                 Select Category
@@ -1150,6 +1396,47 @@ export default function AdminDashboard() {
                   <Save className="w-5 h-5" />
                   {isSaving ? 'Saving...' : 'Save / Publish'}
                 </button>
+                <select
+                  value={galleryOrderMode}
+                  onChange={(e) => {
+                    const mode = e.target.value as typeof galleryOrderMode;
+                    setGalleryOrderMode(mode);
+                    if (mode === 'manual') return;
+                    if (mode === 'reverse') {
+                      applyGalleryOrder([...galleryDraft].reverse());
+                      return;
+                    }
+                    if (mode === 'title_asc') {
+                      applyGalleryOrder(
+                        [...galleryDraft].sort((a, b) =>
+                          (a.title || '').localeCompare(b.title || '', undefined, { sensitivity: 'base' })
+                        )
+                      );
+                      return;
+                    }
+                    if (mode === 'title_desc') {
+                      applyGalleryOrder(
+                        [...galleryDraft].sort((a, b) =>
+                          (b.title || '').localeCompare(a.title || '', undefined, { sensitivity: 'base' })
+                        )
+                      );
+                    }
+                  }}
+                  className="px-4 py-3 bg-transparent border-2 border-gray-700 focus:border-[#ff8c42] outline-none transition-colors uppercase tracking-wider"
+                >
+                  <option value="manual" className="bg-gray-900">
+                    Manual Order
+                  </option>
+                  <option value="reverse" className="bg-gray-900">
+                    Reverse Order
+                  </option>
+                  <option value="title_asc" className="bg-gray-900">
+                    Sort Title A-Z
+                  </option>
+                  <option value="title_desc" className="bg-gray-900">
+                    Sort Title Z-A
+                  </option>
+                </select>
               </div>
             </div>
 
@@ -1169,12 +1456,37 @@ export default function AdminDashboard() {
                     const next = [...galleryDraft];
                     const [moved] = next.splice(fromIdx, 1);
                     next.splice(toIdx, 0, moved);
-                    setGalleryDraft(normalizeGalleryOrder(next));
-                    setHasUnsavedChanges(true);
+                    applyGalleryOrder(next);
+                    setGalleryOrderMode('manual');
                     setDraggingImageId(null);
                   }}
                   className="border-2 border-gray-800 p-4"
                 >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="text-xs uppercase tracking-wider text-gray-500">
+                      Order: {image.order_index + 1}
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => moveGalleryItem(image.id, -1)}
+                        disabled={image.order_index === 0}
+                        className="px-3 py-2 border-2 border-gray-700 text-gray-300 hover:border-[#ff8c42] hover:text-[#ff8c42] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                        aria-label="Move up"
+                        type="button"
+                      >
+                        <ArrowUp className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => moveGalleryItem(image.id, 1)}
+                        disabled={image.order_index === galleryDraft.length - 1}
+                        className="px-3 py-2 border-2 border-gray-700 text-gray-300 hover:border-[#ff8c42] hover:text-[#ff8c42] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                        aria-label="Move down"
+                        type="button"
+                      >
+                        <ArrowDown className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
                   <div className="aspect-video relative overflow-hidden mb-4 bg-gray-900">
                     {image.image_url.match(/\.(mp4|webm|ogg)$/i) ? (
                       <video
