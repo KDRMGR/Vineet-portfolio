@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { subscribeToCmsUpdates, supabase } from '../lib/supabase';
 import { Camera, Aperture, Heart, PlayCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -8,43 +8,37 @@ const photographyCategories = [
     name: 'Fashion & Lifestyle',
     slug: 'fashion',
     icon: Camera,
-    description: 'Editorial shoots and lifestyle photography',
-    image: 'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=800&h=600&fit=crop'
+    description: 'Editorial shoots and lifestyle photography'
   },
   {
     name: 'People & Places',
     slug: 'people',
     icon: Aperture,
-    description: 'Portrait and location photography',
-    image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=800&h=600&fit=crop'
+    description: 'Portrait and location photography'
   },
   {
     name: 'Concerts',
     slug: 'concerts',
     icon: Camera,
-    description: 'Live music and performance photography',
-    image: 'https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=800&h=600&fit=crop'
+    description: 'Live music and performance photography'
   },
   {
     name: 'Corporate Events',
     slug: 'corporate',
     icon: Aperture,
-    description: 'Professional corporate photography',
-    image: 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&h=600&fit=crop'
+    description: 'Professional corporate photography'
   },
   {
     name: 'Nightlife',
     slug: 'nightlife',
     icon: Camera,
-    description: 'Night scene and club photography',
-    image: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800&h=600&fit=crop'
+    description: 'Night scene and club photography'
   },
   {
     name: 'Wedding & Others',
     slug: 'wedding',
     icon: Heart,
-    description: 'Wedding photography and special occasions',
-    image: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=800&h=600&fit=crop'
+    description: 'Wedding photography and special occasions'
   }
 ];
 
@@ -52,37 +46,67 @@ export default function PhotographyPage() {
   const [heroImage, setHeroImage] = useState<string | null>(null);
   const [heading, setHeading] = useState('Photography');
   const [subheading, setSubheading] = useState('Capturing Moments in Time');
+  const [covers, setCovers] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    fetchHeroImage();
-    fetchPageContent();
+    let active = true;
+
+    const fetchHeroImage = async () => {
+      const { data, error } = await supabase
+        .from('gallery_images')
+        .select('image_url')
+        .eq('category', 'hero-photography')
+        .order('order_index', { ascending: true })
+        .limit(1);
+
+      if (!active) return;
+      if (!error && data?.[0]?.image_url) {
+        setHeroImage(data[0].image_url);
+      }
+    };
+
+    const fetchPageContent = async () => {
+      const { data } = await supabase
+        .from('content')
+        .select('key,value')
+        .eq('section', 'photography')
+        .in('key', ['heading', 'subheading']);
+
+      if (!active) return;
+      for (const row of data || []) {
+        if (row.key === 'heading') setHeading(row.value);
+        if (row.key === 'subheading') setSubheading(row.value);
+      }
+    };
+
+    const fetchCovers = async () => {
+      const ids = photographyCategories.map((c) => c.slug);
+      const { data } = await supabase
+        .from('gallery_images')
+        .select('*')
+        .in('category', ids)
+        .order('order_index', { ascending: true });
+
+      if (!active) return;
+      const next: Record<string, string> = {};
+      for (const id of ids) {
+        const first = (data || []).find((row) => row.category === id);
+        if (first?.image_url) next[id] = first.image_url;
+      }
+      setCovers(next);
+    };
+
+    const load = async () => {
+      await Promise.all([fetchHeroImage(), fetchPageContent(), fetchCovers()]);
+    };
+
+    load();
+    const unsubscribe = subscribeToCmsUpdates(() => load());
+    return () => {
+      active = false;
+      unsubscribe();
+    };
   }, []);
-
-  const fetchHeroImage = async () => {
-    const { data, error } = await supabase
-      .from('gallery_images')
-      .select('image_url')
-      .eq('category', 'hero-photography')
-      .order('order_index', { ascending: true })
-      .limit(1);
-
-    if (!error && data?.[0]?.image_url) {
-      setHeroImage(data[0].image_url);
-    }
-  };
-
-  const fetchPageContent = async () => {
-    const { data } = await supabase
-      .from('content')
-      .select('key,value')
-      .eq('section', 'photography')
-      .in('key', ['heading', 'subheading']);
-
-    for (const row of data || []) {
-      if (row.key === 'heading') setHeading(row.value);
-      if (row.key === 'subheading') setSubheading(row.value);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -216,11 +240,15 @@ export default function PhotographyPage() {
                   className="group relative overflow-hidden cursor-pointer transition-all duration-500 hover:scale-105"
                 >
                   <div className="aspect-[4/3] relative overflow-hidden">
-                    <img
-                      src={category.image}
-                      alt={category.name}
-                      className="w-full h-full object-cover transition-all duration-700 hover:scale-110"
-                    />
+                    {covers[category.slug] ? (
+                      <img
+                        src={covers[category.slug]}
+                        alt={category.name}
+                        className="w-full h-full object-cover transition-all duration-700 hover:scale-110"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-b from-gray-900 to-black" />
+                    )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500">
                       <div className="absolute bottom-0 left-0 right-0 p-8 md:p-10">
                         <div className="flex items-center gap-3 mb-2">

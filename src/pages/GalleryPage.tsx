@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase, LayoutType } from '../lib/supabase';
+import { subscribeToCmsUpdates, supabase, LayoutType } from '../lib/supabase';
 import { ArrowLeft, X } from 'lucide-react';
 import GridLayout from '../components/gallery-layouts/GridLayout';
 import MasonryLayout from '../components/gallery-layouts/MasonryLayout';
@@ -36,6 +36,15 @@ export default function GalleryPage() {
   useEffect(() => {
     fetchImages();
     fetchLayout();
+  }, [category]);
+
+  useEffect(() => {
+    if (!category) return;
+    const unsubscribe = subscribeToCmsUpdates(() => {
+      fetchImages();
+      fetchLayout();
+    });
+    return () => unsubscribe();
   }, [category]);
 
   const fetchImages = async () => {

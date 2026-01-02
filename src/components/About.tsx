@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { subscribeToCmsUpdates, supabase } from '../lib/supabase';
 
 export default function About() {
   const navigate = useNavigate();
@@ -9,9 +9,11 @@ export default function About() {
     'I am a storytelling geek based in Mumbai. The course of my journey has led me to discover my ability to capture moments and create enticing visuals out of them because the power of a sharp eye met with handling a camera well ascertains me to be able to tell a powerful story.'
   );
   const [paragraph2, setParagraph2] = useState('');
-  const [imageUrl, setImageUrl] = useState('/ref/about.JPEG');
+  const [imageUrl, setImageUrl] = useState('');
 
   useEffect(() => {
+    let active = true;
+
     const load = async () => {
       const { data: aboutContent } = await supabase
         .from('content')
@@ -19,13 +21,13 @@ export default function About() {
         .eq('section', 'about')
         .in('key', ['heading', 'paragraph1', 'paragraph2']);
 
+      if (!active) return;
       for (const row of aboutContent || []) {
         if (row.key === 'heading') setHeading(row.value);
         if (row.key === 'paragraph1') setParagraph1(row.value);
         if (row.key === 'paragraph2') setParagraph2(row.value);
       }
 
-      /*
       const { data: aboutImage } = await supabase
         .from('gallery_images')
         .select('image_url')
@@ -33,11 +35,16 @@ export default function About() {
         .order('order_index', { ascending: true })
         .limit(1);
 
+      if (!active) return;
       if (aboutImage?.[0]?.image_url) setImageUrl(aboutImage[0].image_url);
-      */
     };
 
     load();
+    const unsubscribe = subscribeToCmsUpdates(() => load());
+    return () => {
+      active = false;
+      unsubscribe();
+    };
   }, []);
 
   return (
@@ -86,11 +93,15 @@ export default function About() {
           {/* Image */}
           <div className="relative flex justify-center lg:justify-end animate-slideInRight">
             <div className="w-64 h-80 md:w-72 md:h-96 lg:w-80 lg:h-[28rem] relative">
-              <img
-                src={imageUrl}
-                alt="Photographer"
-                className="w-full h-full object-cover rounded-lg opacity-90 transition-transform duration-700 hover:scale-105"
-              />
+              {imageUrl ? (
+                <img
+                  src={imageUrl}
+                  alt="Photographer"
+                  className="w-full h-full object-cover rounded-lg opacity-90 transition-transform duration-700 hover:scale-105"
+                />
+              ) : (
+                <div className="w-full h-full rounded-lg bg-gradient-to-b from-gray-900 to-black" />
+              )}
               {/* Subtle decorative element */}
               <div className="absolute -bottom-8 -right-8 w-40 h-40 bg-white/10 rounded-full blur-3xl opacity-40"></div>
             </div>

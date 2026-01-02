@@ -92,3 +92,37 @@ export type Database = {
 };
 
 export type LayoutType = 'grid' | 'masonry' | 'collage' | 'grouped';
+
+export const CMS_PUBLISH_STORAGE_KEY = 'cms:lastPublish';
+export const CMS_PUBLISH_EVENT = 'cms:published';
+
+export function publishCmsUpdate() {
+  const stamp = Date.now().toString();
+  try {
+    localStorage.setItem(CMS_PUBLISH_STORAGE_KEY, stamp);
+  } catch {
+    void 0;
+  }
+  window.dispatchEvent(new CustomEvent(CMS_PUBLISH_EVENT, { detail: { stamp } }));
+}
+
+export function subscribeToCmsUpdates(handler: (stamp: string) => void) {
+  const onCustomEvent = (event: Event) => {
+    const detail = (event as CustomEvent<{ stamp?: string }>).detail;
+    if (detail?.stamp) handler(detail.stamp);
+  };
+
+  const onStorage = (event: StorageEvent) => {
+    if (event.key !== CMS_PUBLISH_STORAGE_KEY) return;
+    if (!event.newValue) return;
+    handler(event.newValue);
+  };
+
+  window.addEventListener(CMS_PUBLISH_EVENT, onCustomEvent);
+  window.addEventListener('storage', onStorage);
+
+  return () => {
+    window.removeEventListener(CMS_PUBLISH_EVENT, onCustomEvent);
+    window.removeEventListener('storage', onStorage);
+  };
+}

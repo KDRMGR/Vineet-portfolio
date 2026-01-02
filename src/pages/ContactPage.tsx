@@ -1,6 +1,6 @@
 import { useEffect, useState, FormEvent } from 'react';
 import { Phone, Mail, MapPin, Linkedin, Instagram, Send, Clock, CheckCircle } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { subscribeToCmsUpdates, supabase } from '../lib/supabase';
 
 export default function ContactPage() {
   const [displayName, setDisplayName] = useState('Vineet Labdhe');
@@ -9,9 +9,9 @@ export default function ContactPage() {
   const [email, setEmail] = useState('contact@vineetlabdhe.com');
   const [instagram, setInstagram] = useState('https://instagram.com');
   const [linkedin, setLinkedin] = useState('https://linkedin.com');
-  const [heroMainImage, setHeroMainImage] = useState('https://images.unsplash.com/photo-1542038784456-1ea8e935640e?w=800&h=800&fit=crop');
-  const [heroSecondary1, setHeroSecondary1] = useState('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&h=500&fit=crop');
-  const [heroSecondary2, setHeroSecondary2] = useState('https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=500&h=500&fit=crop');
+  const [heroMainImage, setHeroMainImage] = useState('');
+  const [heroSecondary1, setHeroSecondary1] = useState('');
+  const [heroSecondary2, setHeroSecondary2] = useState('');
 
   const [formData, setFormData] = useState({
     name: '',
@@ -40,6 +40,8 @@ export default function ContactPage() {
   };
 
   useEffect(() => {
+    let active = true;
+
     const load = async () => {
       const { data: heroContent } = await supabase
         .from('content')
@@ -47,6 +49,7 @@ export default function ContactPage() {
         .eq('section', 'hero')
         .in('key', ['name']);
 
+      if (!active) return;
       if (heroContent?.[0]?.value) setDisplayName(heroContent[0].value);
 
       const { data: contactContent } = await supabase
@@ -55,6 +58,7 @@ export default function ContactPage() {
         .eq('section', 'contact')
         .in('key', ['email', 'phone', 'location', 'instagram', 'linkedin']);
 
+      if (!active) return;
       for (const row of contactContent || []) {
         if (row.key === 'email') setEmail(row.value);
         if (row.key === 'phone') setPhone(row.value);
@@ -69,6 +73,7 @@ export default function ContactPage() {
         .in('category', ['contact-hero-main', 'contact-hero-secondary-1', 'contact-hero-secondary-2'])
         .order('order_index', { ascending: true });
 
+      if (!active) return;
       const main = (media || []).find((m) => m.category === 'contact-hero-main');
       const s1 = (media || []).find((m) => m.category === 'contact-hero-secondary-1');
       const s2 = (media || []).find((m) => m.category === 'contact-hero-secondary-2');
@@ -79,6 +84,11 @@ export default function ContactPage() {
     };
 
     load();
+    const unsubscribe = subscribeToCmsUpdates(() => load());
+    return () => {
+      active = false;
+      unsubscribe();
+    };
   }, []);
 
   return (
@@ -138,21 +148,33 @@ export default function ContactPage() {
             <div className="relative">
               <div className="w-full max-w-lg mx-auto">
                 <div className="relative">
-                  <img
-                    src={heroMainImage}
-                    alt="Hero main"
-                    className="w-full h-auto object-cover rounded-md shadow-md"
-                  />
-                  <img
-                    src={heroSecondary1}
-                    alt="Secondary"
-                    className="absolute -right-6 -bottom-6 w-40 h-40 object-cover rounded-md shadow-md rotate-6"
-                  />
-                  <img
-                    src={heroSecondary2}
-                    alt="Secondary"
-                    className="absolute -left-6 -top-6 w-36 h-36 object-cover rounded-md shadow-md -rotate-6"
-                  />
+                  {heroMainImage ? (
+                    <img
+                      src={heroMainImage}
+                      alt="Hero main"
+                      className="w-full h-auto object-cover rounded-md shadow-md"
+                    />
+                  ) : (
+                    <div className="w-full aspect-square bg-gradient-to-b from-gray-900 to-black rounded-md" />
+                  )}
+                  {heroSecondary1 ? (
+                    <img
+                      src={heroSecondary1}
+                      alt="Secondary"
+                      className="absolute -right-6 -bottom-6 w-40 h-40 object-cover rounded-md shadow-md rotate-6"
+                    />
+                  ) : (
+                    <div className="absolute -right-6 -bottom-6 w-40 h-40 bg-gray-900 rounded-md rotate-6" />
+                  )}
+                  {heroSecondary2 ? (
+                    <img
+                      src={heroSecondary2}
+                      alt="Secondary"
+                      className="absolute -left-6 -top-6 w-36 h-36 object-cover rounded-md shadow-md -rotate-6"
+                    />
+                  ) : (
+                    <div className="absolute -left-6 -top-6 w-36 h-36 bg-gray-900 rounded-md -rotate-6" />
+                  )}
                 </div>
               </div>
             </div>

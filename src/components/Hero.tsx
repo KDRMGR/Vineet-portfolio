@@ -1,6 +1,6 @@
 import { ChevronDown } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { subscribeToCmsUpdates, supabase } from '../lib/supabase';
 
 export default function Hero() {
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
@@ -8,8 +8,9 @@ export default function Hero() {
   const [heroName, setHeroName] = useState('Vineet Labdhe');
   const [heroSubtitle, setHeroSubtitle] = useState('Visual Storyteller');
   const [heroTagline, setHeroTagline] = useState('Photographer • Cinematographer');
-  const [backgroundUrl, setBackgroundUrl] = useState('/ref/home_hero.JPEG');
-  const [portraitUrl, setPortraitUrl] = useState('/ref/hero.JPG');
+  const [backgroundUrl, setBackgroundUrl] = useState('');
+  const [portraitUrl, setPortraitUrl] = useState('');
+  const [backgroundOpacity, setBackgroundOpacity] = useState(0.4);
   const [showContent, setShowContent] = useState(false);
 
   useEffect(() => {
@@ -30,17 +31,26 @@ export default function Hero() {
   }, []);
 
   useEffect(() => {
+    let active = true;
+
     const load = async () => {
       const { data: heroContent } = await supabase
         .from('content')
         .select('key,value')
         .eq('section', 'hero')
-        .in('key', ['name', 'subtitle', 'tagline']);
+        .in('key', ['name', 'subtitle', 'tagline', 'background_opacity']);
 
+      if (!active) return;
       for (const row of heroContent || []) {
         if (row.key === 'name') setHeroName(row.value);
         if (row.key === 'subtitle') setHeroSubtitle(row.value);
         if (row.key === 'tagline') setHeroTagline(row.value);
+        if (row.key === 'background_opacity') {
+          const parsed = Number.parseFloat(row.value);
+          if (Number.isFinite(parsed)) {
+            setBackgroundOpacity(Math.min(1, Math.max(0, parsed)));
+          }
+        }
       }
 
       const { data: heroMedia } = await supabase
@@ -49,6 +59,7 @@ export default function Hero() {
         .in('category', ['home-hero-bg', 'home-hero-portrait'])
         .order('order_index', { ascending: true });
 
+      if (!active) return;
       const bg = (heroMedia || []).find((m) => m.category === 'home-hero-bg');
       const portrait = (heroMedia || []).find((m) => m.category === 'home-hero-portrait');
 
@@ -57,6 +68,11 @@ export default function Hero() {
     };
 
     load();
+    const unsubscribe = subscribeToCmsUpdates(() => load());
+    return () => {
+      active = false;
+      unsubscribe();
+    };
   }, []);
 
   const scrollToAbout = () => {
@@ -67,16 +83,21 @@ export default function Hero() {
     <section id="home" className="relative min-h-screen flex items-center justify-center bg-black overflow-hidden">
       {/* Background Video/Image */}
       <div className="absolute inset-0 z-0">
-        {backgroundUrl.match(/\.(mp4|webm|ogg)$/i) ? (
-          <video autoPlay muted loop playsInline className="w-full h-full object-cover opacity-40">
-            <source src={backgroundUrl} />
-          </video>
+        {backgroundUrl ? (
+          backgroundUrl.match(/\.(mp4|webm|ogg)$/i) ? (
+            <video autoPlay muted loop playsInline className="w-full h-full object-cover" style={{ opacity: backgroundOpacity }}>
+              <source src={backgroundUrl} />
+            </video>
+          ) : (
+            <img
+              src={backgroundUrl}
+              alt="Background"
+              className="w-full h-full object-cover"
+              style={{ opacity: backgroundOpacity }}
+            />
+          )
         ) : (
-          <img
-            src={backgroundUrl}
-            alt="Background"
-            className="w-full h-full object-cover opacity-40"
-          />
+          <div className="w-full h-full bg-gradient-to-b from-gray-900 to-black" style={{ opacity: backgroundOpacity }} />
         )}
         <div className="absolute inset-0 bg-black/40"></div>
       </div>
@@ -102,14 +123,27 @@ export default function Hero() {
             </span>
           </h2>
 
+          <div className="mb-10 sm:mb-12">
+            <p className="font-sans text-xs sm:text-sm uppercase tracking-[0.25em] text-gray-300">
+              {heroSubtitle}
+            </p>
+            <p className="font-sans text-xs sm:text-sm uppercase tracking-[0.25em] text-gray-500 mt-2">
+              {heroTagline}
+            </p>
+          </div>
+
           {/* Portrait Image in the middle */}
           <div className={`relative mx-auto -mb-8 sm:-mb-12 md:-mb-16 w-48 h-48 sm:w-56 sm:h-56 md:w-64 md:h-64 overflow-hidden border-2 border-white/20 ${showContent ? 'animate-scaleIn' : 'opacity-0 scale-50'}`}
                style={{animationDelay: '0.3s', animationFillMode: 'forwards'}}>
-            <img
-              src={portraitUrl}
-              alt={heroName}
-              className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
-            />
+            {portraitUrl ? (
+              <img
+                src={portraitUrl}
+                alt={heroName}
+                className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-b from-gray-900 to-black" />
+            )}
           </div>
 
           {/* Portfolio Text at the bottom */}

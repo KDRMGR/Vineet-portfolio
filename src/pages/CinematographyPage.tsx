@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, subscribeToCmsUpdates } from '../lib/supabase';
 import { Video, Film, Play, PlayCircle } from 'lucide-react';
 
 interface VideoProject {
@@ -20,51 +20,109 @@ export default function CinematographyPage() {
   const [heading, setHeading] = useState('Cinematography');
   const [subheading, setSubheading] = useState('Visual Storytelling Through Motion');
 
+  const isVideoFile = (url: string) => /\.(mp4|webm|ogg)$/i.test(url);
+
+  const getYouTubeVideoId = (url: string) => {
+    try {
+      const parsed = new URL(url);
+      const host = parsed.hostname.replace(/^www\./, '');
+      if (host === 'youtu.be') {
+        const id = parsed.pathname.split('/').filter(Boolean)[0];
+        return id || null;
+      }
+      if (host.endsWith('youtube.com')) {
+        const v = parsed.searchParams.get('v');
+        if (v) return v;
+        const segments = parsed.pathname.split('/').filter(Boolean);
+        const embedIndex = segments.indexOf('embed');
+        if (embedIndex >= 0 && segments[embedIndex + 1]) return segments[embedIndex + 1];
+        const shortsIndex = segments.indexOf('shorts');
+        if (shortsIndex >= 0 && segments[shortsIndex + 1]) return segments[shortsIndex + 1];
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  };
+
+  const getVimeoVideoId = (url: string) => {
+    try {
+      const parsed = new URL(url);
+      const host = parsed.hostname.replace(/^www\./, '');
+      if (!host.endsWith('vimeo.com')) return null;
+      const segments = parsed.pathname.split('/').filter(Boolean);
+      const id = segments[segments.length - 1];
+      if (id && /^\d+$/.test(id)) return id;
+    } catch {
+      return null;
+    }
+    return null;
+  };
+
+  const getEmbedUrl = (url: string) => {
+    const ytId = getYouTubeVideoId(url);
+    if (ytId) {
+      return `https://www.youtube.com/embed/${ytId}?autoplay=1&mute=1&loop=1&playlist=${ytId}&controls=0&modestbranding=1&rel=0&playsinline=1`;
+    }
+    const vimeoId = getVimeoVideoId(url);
+    if (vimeoId) {
+      return `https://player.vimeo.com/video/${vimeoId}?autoplay=1&muted=1&loop=1&background=1`;
+    }
+    return null;
+  };
+
   useEffect(() => {
-    fetchProjects();
-    fetchHeroVideo();
-    fetchPageContent();
+    let active = true;
+
+    const load = async () => {
+      setLoading(true);
+
+      const [
+        { data: projectsData },
+        { data: heroData },
+        { data: contentData },
+      ] = await Promise.all([
+        supabase
+          .from('gallery_images')
+          .select('*')
+          .in('category', ['concerts', 'corporate', 'commercial', 'events', 'documentary', 'live'])
+          .order('order_index', { ascending: true }),
+        supabase
+          .from('gallery_images')
+          .select('image_url')
+          .eq('category', 'hero-cinematography')
+          .order('order_index', { ascending: true })
+          .limit(1),
+        supabase
+          .from('content')
+          .select('key,value')
+          .eq('section', 'cinematography')
+          .in('key', ['heading', 'subheading']),
+      ]);
+
+      if (!active) return;
+
+      setProjects((projectsData as VideoProject[]) || []);
+      setHeroVideo(heroData?.[0]?.image_url || null);
+
+      let nextHeading = 'Cinematography';
+      let nextSubheading = 'Visual Storytelling Through Motion';
+      for (const row of contentData || []) {
+        if (row.key === 'heading') nextHeading = row.value;
+        if (row.key === 'subheading') nextSubheading = row.value;
+      }
+      setHeading(nextHeading);
+      setSubheading(nextSubheading);
+      setLoading(false);
+    };
+
+    load();
+    const unsubscribe = subscribeToCmsUpdates(() => load());
+    return () => {
+      active = false;
+      unsubscribe();
+    };
   }, []);
-
-  const fetchProjects = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('gallery_images')
-      .select('*')
-      .in('category', ['concerts', 'corporate', 'commercial', 'events', 'documentary', 'live'])
-      .order('order_index', { ascending: true });
-
-    if (!error && data) {
-      setProjects(data);
-    }
-    setLoading(false);
-  };
-
-  const fetchHeroVideo = async () => {
-    const { data, error } = await supabase
-      .from('gallery_images')
-      .select('image_url')
-      .eq('category', 'hero-cinematography')
-      .order('order_index', { ascending: true })
-      .limit(1);
-
-    if (!error && data?.[0]?.image_url) {
-      setHeroVideo(data[0].image_url);
-    }
-  };
-
-  const fetchPageContent = async () => {
-    const { data } = await supabase
-      .from('content')
-      .select('key,value')
-      .eq('section', 'cinematography')
-      .in('key', ['heading', 'subheading']);
-
-    for (const row of data || []) {
-      if (row.key === 'heading') setHeading(row.value);
-      if (row.key === 'subheading') setSubheading(row.value);
-    }
-  };
 
   if (loading) {
     return (
@@ -80,26 +138,38 @@ export default function CinematographyPage() {
       <section className="relative min-h-screen flex items-center justify-center py-20 px-4 md:px-8 overflow-hidden">
         {/* Background Video */}
         <div className="absolute inset-0 z-0">
-          <iframe
-            className="w-full h-full opacity-60"
-            src="https://www.youtube.com/embed/8_tvtptLeZk?autoplay=1&mute=1&loop=1&playlist=8_tvtptLeZk&controls=0&showinfo=0&modestbranding=1&rel=0&vq=hd1080&playsinline=1"
-            title="Cinematography Hero Video"
-            allow="autoplay; encrypted-media; fullscreen"
-            allowFullScreen
-            style={{
-              border: 'none',
-              pointerEvents: 'none',
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              width: '100vw',
-              height: '100vh',
-              transform: 'translate(-50%, -50%)',
-              minWidth: '100%',
-              minHeight: '100%',
-              objectFit: 'cover'
-            }}
-          />
+          {heroVideo ? (
+            isVideoFile(heroVideo) ? (
+              <video autoPlay muted loop playsInline className="w-full h-full object-cover opacity-60">
+                <source src={heroVideo} />
+              </video>
+            ) : getEmbedUrl(heroVideo) ? (
+              <iframe
+                className="w-full h-full opacity-60"
+                src={getEmbedUrl(heroVideo) || undefined}
+                title="Cinematography Hero Video"
+                allow="autoplay; encrypted-media; fullscreen"
+                allowFullScreen
+                style={{
+                  border: 'none',
+                  pointerEvents: 'none',
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  width: '100vw',
+                  height: '100vh',
+                  transform: 'translate(-50%, -50%)',
+                  minWidth: '100%',
+                  minHeight: '100%',
+                  objectFit: 'cover',
+                }}
+              />
+            ) : (
+              <img src={heroVideo} alt="Cinematography Hero" className="w-full h-full object-cover opacity-60" />
+            )
+          ) : (
+            <div className="w-full h-full bg-gradient-to-b from-gray-900 to-black opacity-60" />
+          )}
           <div className="absolute inset-0 bg-black/40"></div>
         </div>
 
@@ -192,7 +262,7 @@ export default function CinematographyPage() {
                 onClick={() => setSelectedVideo(project.image_url)}
               >
                 <div className="aspect-[4/3] relative overflow-hidden">
-                  {project.image_url.match(/\.(mp4|webm|ogg)$/i) ? (
+                  {isVideoFile(project.image_url) ? (
                     <video
                       src={project.image_url}
                       className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
@@ -200,6 +270,10 @@ export default function CinematographyPage() {
                       loop
                       playsInline
                     />
+                  ) : getEmbedUrl(project.image_url) ? (
+                    <div className="w-full h-full bg-gradient-to-b from-gray-900 to-black flex items-center justify-center transition-all duration-700 group-hover:scale-110">
+                      <PlayCircle className="w-16 h-16 text-white/80" />
+                    </div>
                   ) : (
                     <img
                       src={project.image_url}
@@ -242,13 +316,22 @@ export default function CinematographyPage() {
               </svg>
             </button>
             <div className="aspect-video bg-black rounded-lg overflow-hidden">
-              {selectedVideo.match(/\.(mp4|webm|ogg)$/i) ? (
+              {isVideoFile(selectedVideo) ? (
                 <video
                   src={selectedVideo}
                   controls
                   autoPlay
                   playsInline
                   className="w-full h-full object-contain"
+                />
+              ) : getEmbedUrl(selectedVideo) ? (
+                <iframe
+                  src={getEmbedUrl(selectedVideo) || undefined}
+                  title="Video"
+                  allow="autoplay; encrypted-media; fullscreen"
+                  allowFullScreen
+                  className="w-full h-full"
+                  style={{ border: 'none' }}
                 />
               ) : (
                 <img
