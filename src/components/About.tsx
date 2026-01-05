@@ -9,7 +9,7 @@ export default function About() {
     'I am a storytelling geek based in Mumbai. The course of my journey has led me to discover my ability to capture moments and create enticing visuals out of them because the power of a sharp eye met with handling a camera well ascertains me to be able to tell a powerful story.'
   );
   const [paragraph2, setParagraph2] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
 
   useEffect(() => {
     let active = true;
@@ -33,10 +33,10 @@ export default function About() {
         .select('image_url')
         .eq('category', 'about-image')
         .order('order_index', { ascending: true })
-        .limit(1);
+        .limit(3);
 
       if (!active) return;
-      if (aboutImage?.[0]?.image_url) setImageUrl(aboutImage[0].image_url);
+      setImageUrls((aboutImage || []).map((row) => row.image_url).filter(Boolean));
     };
 
     load();
@@ -92,13 +92,29 @@ export default function About() {
 
           {/* Image */}
           <div className="relative flex justify-center lg:justify-end animate-slideInRight">
-            <div className="w-64 h-80 md:w-72 md:h-96 lg:w-80 lg:h-[28rem] relative">
-              {imageUrl ? (
-                <img
-                  src={imageUrl}
-                  alt="Photographer"
-                  className="w-full h-full object-cover rounded-lg opacity-90 transition-transform duration-700 hover:scale-105"
-                />
+            <div className="w-72 h-[26rem] md:w-80 md:h-[28rem] lg:w-96 lg:h-[32rem] relative">
+              {imageUrls.length > 0 ? (
+                <>
+                  <img
+                    src={imageUrls[0]}
+                    alt="About"
+                    className="absolute top-0 left-1/2 -translate-x-1/2 w-[78%] h-[72%] object-cover rounded-lg opacity-90 shadow-2xl border border-white/10"
+                  />
+                  {imageUrls[1] && (
+                    <img
+                      src={imageUrls[1]}
+                      alt="About"
+                      className="absolute bottom-2 left-0 w-[56%] h-[54%] object-cover rounded-lg opacity-95 shadow-2xl border border-white/10 -rotate-6"
+                    />
+                  )}
+                  {imageUrls[2] && (
+                    <img
+                      src={imageUrls[2]}
+                      alt="About"
+                      className="absolute bottom-0 right-0 w-[56%] h-[54%] object-cover rounded-lg opacity-95 shadow-2xl border border-white/10 rotate-6"
+                    />
+                  )}
+                </>
               ) : (
                 <div className="w-full h-full rounded-lg bg-gradient-to-b from-gray-900 to-black" />
               )}

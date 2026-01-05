@@ -60,6 +60,15 @@ export default function AdminDashboard() {
   const [draggingImageId, setDraggingImageId] = useState<string | null>(null);
   const [galleryOrderMode, setGalleryOrderMode] = useState<'manual' | 'reverse' | 'title_asc' | 'title_desc'>('manual');
   const [newCategoryDraft, setNewCategoryDraft] = useState({ id: '', name: '' });
+  const [aboutImages, setAboutImages] = useState<GalleryImage[]>([]);
+  const [aboutDraft, setAboutDraft] = useState<GalleryImage[]>([]);
+  const [aboutDraggingId, setAboutDraggingId] = useState<string | null>(null);
+  const [showAboutUploadModal, setShowAboutUploadModal] = useState(false);
+  const [aboutUploadDraft, setAboutUploadDraft] = useState({ file: null as File | null, url: '' });
+  const [hasUnsavedAboutImages, setHasUnsavedAboutImages] = useState(false);
+  const [isSavingAboutImages, setIsSavingAboutImages] = useState(false);
+
+  const ABOUT_IMAGES_CATEGORY = 'about-image';
 
   const categories = [
     { id: 'fashion', name: 'Fashion & Lifestyle' },
@@ -153,7 +162,7 @@ export default function AdminDashboard() {
       { category: 'home-hero-bg', label: 'Home Hero Background (image/video)', accept: 'image/*,video/*' },
       { category: 'home-hero-portrait', label: 'Home Hero Portrait (image)', accept: 'image/*' },
     ],
-    about: [{ category: 'about-image', label: 'About Image (image)', accept: 'image/*' }],
+    about: [],
     contact: [
       { category: 'contact-hero-main', label: 'Contact Hero Main Image (image)', accept: 'image/*' },
       { category: 'contact-hero-secondary-1', label: 'Contact Hero Secondary 1 (image)', accept: 'image/*' },
@@ -166,7 +175,6 @@ export default function AdminDashboard() {
   const siteMediaSlots: Array<{ category: string; label: string; accept: string }> = [
     { category: 'home-hero-bg', label: 'Home Hero Background (image/video)', accept: 'image/*,video/*' },
     { category: 'home-hero-portrait', label: 'Home Hero Portrait (image)', accept: 'image/*' },
-    { category: 'about-image', label: 'Home About Image (image)', accept: 'image/*' },
     { category: 'contact-hero-main', label: 'Contact Hero Main Image (image)', accept: 'image/*' },
     { category: 'contact-hero-secondary-1', label: 'Contact Hero Secondary 1 (image)', accept: 'image/*' },
     { category: 'contact-hero-secondary-2', label: 'Contact Hero Secondary 2 (image)', accept: 'image/*' },
@@ -273,10 +281,12 @@ export default function AdminDashboard() {
     setGalleryDraft(galleryImages);
     setLayoutDraft(currentLayout);
     setHasUnsavedChanges(false);
+    setAboutDraft(aboutImages);
+    setHasUnsavedAboutImages(false);
   };
 
   const guardUnsaved = (next: () => void) => {
-    if (!hasUnsavedChanges) return next();
+    if (!hasUnsavedChanges && !hasUnsavedAboutImages) return next();
     const ok = confirm('You have unsaved changes. Discard them?');
     if (!ok) return;
     resetDrafts();
@@ -291,14 +301,14 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (!hasUnsavedChanges) return;
+      if (!hasUnsavedChanges && !hasUnsavedAboutImages) return;
       e.preventDefault();
       e.returnValue = '';
     };
 
     window.addEventListener('beforeunload', onBeforeUnload);
     return () => window.removeEventListener('beforeunload', onBeforeUnload);
-  }, [hasUnsavedChanges]);
+  }, [hasUnsavedChanges, hasUnsavedAboutImages]);
 
   useEffect(() => {
     if (!user) return;
@@ -346,6 +356,13 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (!user) return;
+    if (activeTab === 'pages' && selectedPage === 'about') {
+      fetchAboutImages();
+    }
+  }, [user, activeTab, selectedPage]);
+
+  useEffect(() => {
+    if (!user) return;
     if (activeTab === 'media') {
       fetchSiteMedia();
     }
@@ -378,6 +395,19 @@ export default function AdminDashboard() {
     if (!error && data) {
       setGalleryImages(data);
       setGalleryDraft(data);
+    }
+  };
+
+  const fetchAboutImages = async () => {
+    const { data, error } = await supabase
+      .from('gallery_images')
+      .select('*')
+      .eq('category', ABOUT_IMAGES_CATEGORY)
+      .order('order_index', { ascending: true });
+
+    if (!error && data) {
+      setAboutImages(data);
+      setAboutDraft(data);
     }
   };
 
@@ -617,6 +647,65 @@ export default function AdminDashboard() {
     setGalleryOrderMode('manual');
   };
 
+  const normalizeAboutOrder = (items: GalleryImage[]) => {
+    return items.map((item, idx) => ({ ...item, order_index: idx }));
+  };
+
+  const applyAboutOrder = (items: GalleryImage[]) => {
+    setAboutDraft(normalizeAboutOrder(items));
+    setHasUnsavedAboutImages(true);
+  };
+
+  const moveAboutItem = (id: string, direction: -1 | 1) => {
+    const fromIdx = aboutDraft.findIndex((g) => g.id === id);
+    if (fromIdx === -1) return;
+    const toIdx = fromIdx + direction;
+    if (toIdx < 0 || toIdx >= aboutDraft.length) return;
+    const next = [...aboutDraft];
+    const [moved] = next.splice(fromIdx, 1);
+    next.splice(toIdx, 0, moved);
+    applyAboutOrder(next);
+  };
+
+  const handleDeleteAboutImage = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this image?')) return;
+    const { error } = await supabase.from('gallery_images').delete().eq('id', id);
+    if (error) {
+      showToast('error', 'Error deleting image');
+      return;
+    }
+    showToast('success', 'Image deleted successfully!');
+    publishCmsUpdate();
+    fetchAboutImages();
+  };
+
+  const saveAboutImages = async () => {
+    setIsSavingAboutImages(true);
+    try {
+      const originalById = new Map(aboutImages.map((img) => [img.id, img]));
+      const updates = aboutDraft.filter((img) => {
+        const original = originalById.get(img.id);
+        if (!original) return true;
+        return original.order_index !== img.order_index;
+      });
+
+      for (const img of updates) {
+        const { error } = await supabase.from('gallery_images').update({ order_index: img.order_index }).eq('id', img.id);
+        if (error) {
+          showToast('error', 'Error saving about images');
+          return;
+        }
+      }
+
+      showToast('success', 'Changes saved successfully');
+      publishCmsUpdate();
+      setHasUnsavedAboutImages(false);
+      fetchAboutImages();
+    } finally {
+      setIsSavingAboutImages(false);
+    }
+  };
+
   const openImageEditor = (id: string) => {
     const img = galleryDraft.find((g) => g.id === id);
     if (!img) return;
@@ -791,7 +880,7 @@ export default function AdminDashboard() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => {
-                if (hasUnsavedChanges) {
+                if (hasUnsavedChanges || hasUnsavedAboutImages) {
                   showToast('error', 'Save changes before preview');
                   return;
                 }
@@ -891,7 +980,7 @@ export default function AdminDashboard() {
           </button>
         </div>
 
-        {hasUnsavedChanges && (
+        {(hasUnsavedChanges || hasUnsavedAboutImages) && (
           <div className="mb-8 border-2 border-yellow-500/40 bg-yellow-500/10 px-4 py-3 text-yellow-200 uppercase tracking-wider text-sm">
             You have unsaved changes
           </div>
@@ -1097,6 +1186,106 @@ export default function AdminDashboard() {
                 })}
               </div>
             </div>
+
+            {selectedPage === 'about' && (
+              <div className="border-2 border-gray-800 p-6">
+                <h2 className="text-2xl font-bold uppercase tracking-wider mb-6 text-[#ff8c42]">
+                  About Images
+                </h2>
+                <div className="flex flex-wrap gap-4 mb-6">
+                  <button
+                    onClick={() => {
+                      setAboutUploadDraft({ file: null, url: '' });
+                      setShowAboutUploadModal(true);
+                    }}
+                    className="flex items-center gap-2 px-6 py-3 border-2 border-[#ff8c42] text-[#ff8c42] font-bold uppercase tracking-wider hover:bg-[#ff8c42] hover:text-black transition-colors"
+                    type="button"
+                  >
+                    <ImageIcon className="w-5 h-5" />
+                    Add Image
+                  </button>
+                  <button
+                    onClick={saveAboutImages}
+                    disabled={isSavingAboutImages || !hasUnsavedAboutImages}
+                    className="flex items-center gap-2 px-6 py-3 border-2 border-green-500 text-green-500 font-bold uppercase tracking-wider hover:bg-green-500 hover:text-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    type="button"
+                  >
+                    <Save className="w-5 h-5" />
+                    {isSavingAboutImages ? 'Saving...' : 'Save / Publish'}
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {aboutDraft.map((image) => (
+                    <div
+                      key={image.id}
+                      draggable
+                      onDragStart={() => setAboutDraggingId(image.id)}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={() => {
+                        if (!aboutDraggingId) return;
+                        if (aboutDraggingId === image.id) return;
+                        const fromIdx = aboutDraft.findIndex((g) => g.id === aboutDraggingId);
+                        const toIdx = aboutDraft.findIndex((g) => g.id === image.id);
+                        if (fromIdx === -1 || toIdx === -1) return;
+                        const next = [...aboutDraft];
+                        const [moved] = next.splice(fromIdx, 1);
+                        next.splice(toIdx, 0, moved);
+                        applyAboutOrder(next);
+                        setAboutDraggingId(null);
+                      }}
+                      className="border-2 border-gray-800 p-4"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="text-xs uppercase tracking-wider text-gray-500">
+                          Order: {image.order_index + 1}
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => moveAboutItem(image.id, -1)}
+                            disabled={image.order_index === 0}
+                            className="px-3 py-2 border-2 border-gray-700 text-gray-300 hover:border-[#ff8c42] hover:text-[#ff8c42] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                            aria-label="Move up"
+                            type="button"
+                          >
+                            <ArrowUp className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => moveAboutItem(image.id, 1)}
+                            disabled={image.order_index === aboutDraft.length - 1}
+                            className="px-3 py-2 border-2 border-gray-700 text-gray-300 hover:border-[#ff8c42] hover:text-[#ff8c42] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                            aria-label="Move down"
+                            type="button"
+                          >
+                            <ArrowDown className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="aspect-video relative overflow-hidden mb-4 bg-gray-900">
+                        <img src={image.image_url} alt="About" className="w-full h-full object-cover" />
+                      </div>
+                      <button
+                        onClick={() => handleDeleteAboutImage(image.id)}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2 border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-all"
+                        type="button"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Delete
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {aboutDraft.length === 0 && (
+                  <div className="text-center py-20">
+                    <ImageIcon className="w-16 h-16 mx-auto mb-4 text-gray-700" />
+                    <p className="text-gray-500 uppercase tracking-wider">
+                      No about images yet
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -1618,6 +1807,109 @@ export default function AdminDashboard() {
                     }}
                     disabled={isUploading || (!pageMediaDraft.file && !pageMediaDraft.url.trim())}
                     className="flex-1 px-6 py-3 bg-[#ff8c42] text-black font-bold uppercase tracking-wider hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isUploading ? 'Saving...' : 'Save'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showAboutUploadModal && (
+          <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+            <div className="bg-gray-900 border-2 border-[#ff8c42] rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <h2 className="text-2xl font-bold uppercase tracking-wider mb-6 text-[#ff8c42]">
+                  Add About Image
+                </h2>
+
+                <div className="mb-6">
+                  <label className="block text-sm uppercase tracking-wider mb-2 text-gray-400">
+                    Image URL
+                  </label>
+                  <input
+                    type="url"
+                    value={aboutUploadDraft.url}
+                    onChange={(e) => setAboutUploadDraft((prev) => ({ ...prev, url: e.target.value }))}
+                    placeholder="https://example.com/file.jpg"
+                    className="w-full px-4 py-3 bg-black border-2 border-gray-700 focus:border-[#ff8c42] outline-none text-white"
+                  />
+                </div>
+
+                <div className="mb-6">
+                  <label className="block text-sm uppercase tracking-wider mb-2 text-gray-400">
+                    Upload File
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] || null;
+                      setAboutUploadDraft((prev) => ({ ...prev, file }));
+                    }}
+                    className="w-full px-4 py-3 bg-black border-2 border-gray-700 focus:border-[#ff8c42] outline-none text-white"
+                  />
+                </div>
+
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => {
+                      setShowAboutUploadModal(false);
+                      setAboutUploadDraft({ file: null, url: '' });
+                    }}
+                    disabled={isUploading}
+                    className="flex-1 px-6 py-3 border-2 border-gray-600 text-gray-300 font-bold uppercase tracking-wider hover:bg-gray-800 transition-colors disabled:opacity-50"
+                    type="button"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (!aboutUploadDraft.file && !aboutUploadDraft.url.trim()) return;
+                      setIsUploading(true);
+                      try {
+                        const url = aboutUploadDraft.file
+                          ? await uploadToStorage(aboutUploadDraft.file, ABOUT_IMAGES_CATEGORY)
+                          : aboutUploadDraft.url.trim();
+
+                        const { error } = await supabase.from('gallery_images').insert({
+                          category: ABOUT_IMAGES_CATEGORY,
+                          image_url: url,
+                          title: null,
+                          description: null,
+                          order_index: aboutImages.length,
+                        });
+
+                        if (error) {
+                          showToast('error', 'Error adding image');
+                          return;
+                        }
+
+                        showToast('success', 'Image added successfully!');
+                        publishCmsUpdate();
+                        fetchAboutImages();
+                        setShowAboutUploadModal(false);
+                        setAboutUploadDraft({ file: null, url: '' });
+                      } catch (err) {
+                        console.error(err);
+                        const message =
+                          err instanceof Error
+                            ? err.message
+                            : typeof err === 'object' &&
+                                err !== null &&
+                                'message' in err &&
+                                typeof (err as { message?: unknown }).message === 'string'
+                              ? ((err as { message?: string }).message ?? 'Upload failed')
+                              : 'Upload failed';
+                        showToast('error', message);
+                      } finally {
+                        setIsUploading(false);
+                      }
+                    }}
+                    disabled={isUploading || (!aboutUploadDraft.file && !aboutUploadDraft.url.trim())}
+                    className="flex-1 px-6 py-3 bg-[#ff8c42] text-black font-bold uppercase tracking-wider hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    type="button"
                   >
                     {isUploading ? 'Saving...' : 'Save'}
                   </button>
