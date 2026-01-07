@@ -48,6 +48,8 @@ interface GalleryImage {
   image_url: string;
   title: string | null;
   description: string | null;
+  tags: string[] | null;
+  section_id: string | null;
   order_index: number;
 }
 

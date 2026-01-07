@@ -42,6 +42,8 @@ export type Database = {
           image_url: string;
           title: string | null;
           description: string | null;
+          tags: string[] | null;
+          section_id: string | null;
           order_index: number;
           created_at: string;
         };
@@ -51,6 +53,8 @@ export type Database = {
           image_url: string;
           title?: string | null;
           description?: string | null;
+          tags?: string[] | null;
+          section_id?: string | null;
           order_index?: number;
           created_at?: string;
         };
@@ -60,6 +64,31 @@ export type Database = {
           image_url?: string;
           title?: string | null;
           description?: string | null;
+          tags?: string[] | null;
+          section_id?: string | null;
+          order_index?: number;
+          created_at?: string;
+        };
+      };
+      gallery_sections: {
+        Row: {
+          id: string;
+          category: string;
+          name: string;
+          order_index: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          category: string;
+          name: string;
+          order_index?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          category?: string;
+          name?: string;
           order_index?: number;
           created_at?: string;
         };

@@ -27,7 +27,15 @@ export default function CinematographyPage() {
   const [categories, setCategories] = useState(defaultCinematographyCategories);
   const [covers, setCovers] = useState<Record<string, string>>({});
 
-  const isVideoFile = (url: string) => /\.(mp4|webm|ogg)$/i.test(url);
+  const stripQuery = (url: string) => {
+    try {
+      return new URL(url).pathname;
+    } catch {
+      return url.split('?')[0] || url;
+    }
+  };
+
+  const isVideoFile = (url: string) => /\.(mp4|webm|ogg)$/i.test(stripQuery(url));
 
   const safeParseCategoryList = (raw: string | undefined) => {
     if (!raw) return null;
@@ -87,6 +95,22 @@ export default function CinematographyPage() {
     return null;
   };
 
+  const getInstagramEmbedUrl = (url: string) => {
+    try {
+      const parsed = new URL(url);
+      const host = parsed.hostname.replace(/^www\./, '');
+      if (!host.endsWith('instagram.com')) return null;
+      const segments = parsed.pathname.split('/').filter(Boolean);
+      const kind = segments[0];
+      const shortcode = segments[1];
+      if (!shortcode) return null;
+      if (kind !== 'p' && kind !== 'reel' && kind !== 'tv') return null;
+      return `https://www.instagram.com/${kind}/${shortcode}/embed`;
+    } catch {
+      return null;
+    }
+  };
+
   const getEmbedUrl = (url: string) => {
     const ytId = getYouTubeVideoId(url);
     if (ytId) {
@@ -96,6 +120,8 @@ export default function CinematographyPage() {
     if (vimeoId) {
       return `https://player.vimeo.com/video/${vimeoId}?autoplay=1&muted=1&loop=1&background=1`;
     }
+    const ig = getInstagramEmbedUrl(url);
+    if (ig) return ig;
     return null;
   };
 
@@ -190,23 +216,13 @@ export default function CinematographyPage() {
               </video>
             ) : getEmbedUrl(heroVideo) ? (
               <iframe
-                className="w-full h-full opacity-60"
+                className="absolute inset-0 w-full h-full opacity-60 pointer-events-none"
                 src={getEmbedUrl(heroVideo) || undefined}
                 title="Cinematography Hero Video"
                 allow="autoplay; encrypted-media; fullscreen"
                 allowFullScreen
                 style={{
                   border: 'none',
-                  pointerEvents: 'none',
-                  position: 'absolute',
-                  top: '50%',
-                  left: '50%',
-                  width: '100vw',
-                  height: '100vh',
-                  transform: 'translate(-50%, -50%)',
-                  minWidth: '100%',
-                  minHeight: '100%',
-                  objectFit: 'cover',
                 }}
               />
             ) : (
@@ -223,10 +239,10 @@ export default function CinematographyPage() {
           <div className="mb-12">
             <Film className="w-24 h-24 mx-auto mb-8 text-white" />
           </div>
-          <h1 className="font-display text-6xl md:text-9xl font-light uppercase tracking-[0.15em] mb-8" style={{letterSpacing: '0.15em'}}>
+          <h1 className="font-display text-4xl sm:text-6xl md:text-9xl font-light uppercase tracking-[0.08em] sm:tracking-[0.12em] md:tracking-[0.15em] mb-8">
             {heading}
           </h1>
-          <p className="font-sans text-2xl md:text-3xl uppercase tracking-[0.25em] mb-12 text-gray-400" style={{letterSpacing: '0.25em'}}>
+          <p className="font-sans text-lg sm:text-2xl md:text-3xl uppercase tracking-[0.12em] sm:tracking-[0.2em] md:tracking-[0.25em] mb-12 text-gray-400">
             {subheading}
           </p>
 

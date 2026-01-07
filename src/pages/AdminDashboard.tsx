@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, LayoutType, publishCmsUpdate } from '../lib/supabase';
-import { LogOut, Trash2, Plus, Image as ImageIcon, Layout, Save, Eye, Pencil, ArrowUp, ArrowDown } from 'lucide-react';
+import { LogOut, Trash2, Plus, Image as ImageIcon, Layout, Save, Eye, Pencil, ArrowUp, ArrowDown, PlayCircle } from 'lucide-react';
 
 interface ContentItem {
   id: string;
@@ -17,6 +17,15 @@ interface GalleryImage {
   image_url: string;
   title: string | null;
   description: string | null;
+  tags: string[] | null;
+  section_id: string | null;
+  order_index: number;
+}
+
+interface GallerySection {
+  id: string;
+  category: string;
+  name: string;
   order_index: number;
 }
 
@@ -34,6 +43,8 @@ export default function AdminDashboard() {
   const [content, setContent] = useState<ContentItem[]>([]);
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
   const [galleryDraft, setGalleryDraft] = useState<GalleryImage[]>([]);
+  const [gallerySections, setGallerySections] = useState<GallerySection[]>([]);
+  const [newSectionName, setNewSectionName] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('fashion');
   const [currentLayout, setCurrentLayout] = useState<LayoutType>('grid');
   const [layoutDraft, setLayoutDraft] = useState<LayoutType>('grid');
@@ -48,15 +59,26 @@ export default function AdminDashboard() {
     file: null as File | null,
     url: '',
     title: '',
-    description: ''
+    description: '',
+    tagsText: '',
+    sectionId: ''
   });
+  const [bulkUploadItems, setBulkUploadItems] = useState<
+    Array<{ file: File; previewUrl: string; title: string; description: string }>
+  >([]);
   const [selectedPage, setSelectedPage] = useState<'home' | 'about' | 'contact' | 'photography' | 'cinematography'>('home');
   const [pageMedia, setPageMedia] = useState<Record<string, GalleryImage | null>>({});
   const [siteMedia, setSiteMedia] = useState<Record<string, GalleryImage | null>>({});
   const [pageMediaDraft, setPageMediaDraft] = useState({ category: '', url: '', file: null as File | null });
   const [showPageMediaModal, setShowPageMediaModal] = useState(false);
   const [editingImageId, setEditingImageId] = useState<string | null>(null);
-  const [imageEditDraft, setImageEditDraft] = useState({ title: '', description: '' });
+  const [imageEditDraft, setImageEditDraft] = useState({
+    image_url: '',
+    title: '',
+    description: '',
+    tagsText: '',
+    sectionId: ''
+  });
   const [draggingImageId, setDraggingImageId] = useState<string | null>(null);
   const [galleryOrderMode, setGalleryOrderMode] = useState<'manual' | 'reverse' | 'title_asc' | 'title_desc'>('manual');
   const [newCategoryDraft, setNewCategoryDraft] = useState({ id: '', name: '' });
@@ -69,6 +91,38 @@ export default function AdminDashboard() {
   const [isSavingAboutImages, setIsSavingAboutImages] = useState(false);
 
   const ABOUT_IMAGES_CATEGORY = 'about-image';
+
+  const stripQuery = (url: string) => {
+    try {
+      return new URL(url).pathname;
+    } catch {
+      return url.split('?')[0] || url;
+    }
+  };
+
+  const isVideoUrl = (url: string) => /\.(mp4|webm|ogg)$/i.test(stripQuery(url));
+
+  const isEmbeddableUrl = (url: string) => {
+    try {
+      const parsed = new URL(url);
+      const host = parsed.hostname.replace(/^www\./, '');
+      if (host === 'youtu.be' || host.endsWith('youtube.com')) return true;
+      if (host.endsWith('vimeo.com')) return true;
+      if (host.endsWith('instagram.com')) return true;
+    } catch {
+      return false;
+    }
+    return false;
+  };
+
+  const parseTagsText = (text: string) => {
+    const tags = text
+      .split(/[,\\n]/g)
+      .map((t) => t.trim())
+      .filter(Boolean);
+    if (tags.length === 0) return null;
+    return Array.from(new Set(tags));
+  };
 
   const categories = [
     { id: 'fashion', name: 'Fashion & Lifestyle' },
@@ -328,6 +382,7 @@ export default function AdminDashboard() {
     if (activeTab === 'gallery' || activeTab === 'cinematography' || activeTab === 'photography') {
       fetchGalleryImages();
       fetchGalleryLayout();
+      fetchGallerySections();
     }
   }, [user, activeTab, selectedCategory]);
 
@@ -396,6 +451,85 @@ export default function AdminDashboard() {
       setGalleryImages(data);
       setGalleryDraft(data);
     }
+  };
+
+  const fetchGallerySections = async () => {
+    const { data, error } = await supabase
+      .from('gallery_sections')
+      .select('*')
+      .eq('category', selectedCategory)
+      .order('order_index', { ascending: true });
+
+    if (error) {
+      setGallerySections([]);
+      return;
+    }
+    setGallerySections(data || []);
+  };
+
+  const createSection = async () => {
+    const name = newSectionName.trim();
+    if (!name) return;
+    const { error } = await supabase.from('gallery_sections').insert({
+      category: selectedCategory,
+      name,
+      order_index: gallerySections.length,
+    });
+    if (error) {
+      showToast('error', 'Error creating section');
+      return;
+    }
+    showToast('success', 'Section created successfully!');
+    setNewSectionName('');
+    publishCmsUpdate();
+    fetchGallerySections();
+  };
+
+  const updateSectionName = async (id: string, name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const { error } = await supabase.from('gallery_sections').update({ name: trimmed }).eq('id', id);
+    if (error) {
+      showToast('error', 'Error updating section');
+      return;
+    }
+    showToast('success', 'Section updated successfully!');
+    publishCmsUpdate();
+    fetchGallerySections();
+  };
+
+  const deleteSection = async (id: string) => {
+    const ok = confirm('Delete this section? Media will remain, but be unassigned.');
+    if (!ok) return;
+    const { error } = await supabase.from('gallery_sections').delete().eq('id', id);
+    if (error) {
+      showToast('error', 'Error deleting section');
+      return;
+    }
+    showToast('success', 'Section deleted successfully!');
+    publishCmsUpdate();
+    fetchGallerySections();
+    fetchGalleryImages();
+  };
+
+  const moveSection = async (id: string, direction: -1 | 1) => {
+    const fromIdx = gallerySections.findIndex((s) => s.id === id);
+    if (fromIdx === -1) return;
+    const toIdx = fromIdx + direction;
+    if (toIdx < 0 || toIdx >= gallerySections.length) return;
+    const next = [...gallerySections];
+    const [moved] = next.splice(fromIdx, 1);
+    next.splice(toIdx, 0, moved);
+    const normalized = next.map((s, idx) => ({ ...s, order_index: idx }));
+    setGallerySections(normalized);
+    for (const s of normalized) {
+      const { error } = await supabase.from('gallery_sections').update({ order_index: s.order_index }).eq('id', s.id);
+      if (error) {
+        showToast('error', 'Error saving section order');
+        return;
+      }
+    }
+    publishCmsUpdate();
   };
 
   const fetchAboutImages = async () => {
@@ -526,22 +660,42 @@ export default function AdminDashboard() {
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
+    const files = Array.from(e.target.files || []);
+    e.target.value = '';
+    if (files.length === 0) return;
+
+    if (files.length === 1) {
+      const file = files[0];
       const url = URL.createObjectURL(file);
-      setUploadPreview({ ...uploadPreview, file, url });
+      setBulkUploadItems([]);
+      setUploadPreview({ file, url, title: '', description: '', tagsText: '', sectionId: '' });
       setShowUploadModal(true);
+      return;
     }
+
+    const nextBulk = files.map((file) => ({
+      file,
+      previewUrl: URL.createObjectURL(file),
+      title: '',
+      description: '',
+    }));
+    setBulkUploadItems(nextBulk);
+    setUploadPreview({ file: null, url: '', title: '', description: '', tagsText: '', sectionId: '' });
+    setShowUploadModal(true);
   };
 
   const handleAddImageUrl = () => {
-    setUploadPreview({ file: null, url: '', title: '', description: '' });
+    setBulkUploadItems([]);
+    setUploadPreview({ file: null, url: '', title: '', description: '', tagsText: '', sectionId: '' });
     setShowUploadModal(true);
   };
 
   const handleCancelUpload = () => {
     setShowUploadModal(false);
-    setUploadPreview({ file: null, url: '', title: '', description: '' });
+    for (const item of bulkUploadItems) URL.revokeObjectURL(item.previewUrl);
+    setBulkUploadItems([]);
+    if (uploadPreview.file) URL.revokeObjectURL(uploadPreview.url);
+    setUploadPreview({ file: null, url: '', title: '', description: '', tagsText: '', sectionId: '' });
   };
 
   const handleUploadSubmit = async () => {
@@ -557,6 +711,8 @@ export default function AdminDashboard() {
         image_url: mediaUrl,
         title: uploadPreview.title.trim() || null,
         description: uploadPreview.description.trim() || null,
+        tags: parseTagsText(uploadPreview.tagsText),
+        section_id: uploadPreview.sectionId.trim() ? uploadPreview.sectionId.trim() : null,
         order_index: galleryImages.length,
       });
 
@@ -567,8 +723,59 @@ export default function AdminDashboard() {
         publishCmsUpdate();
         fetchGalleryImages();
         setShowUploadModal(false);
-        setUploadPreview({ file: null, url: '', title: '', description: '' });
+        if (uploadPreview.file) URL.revokeObjectURL(uploadPreview.url);
+        setUploadPreview({ file: null, url: '', title: '', description: '', tagsText: '', sectionId: '' });
       }
+    } catch (err) {
+      console.error(err);
+      const message =
+        err instanceof Error
+          ? err.message
+          : typeof err === 'object' &&
+              err !== null &&
+              'message' in err &&
+              typeof (err as { message?: unknown }).message === 'string'
+            ? ((err as { message?: string }).message ?? 'Upload failed')
+            : 'Upload failed';
+      showToast('error', message);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleBulkUploadSubmit = async () => {
+    if (bulkUploadItems.length === 0) return;
+
+    setIsUploading(true);
+    try {
+      const tags = parseTagsText(uploadPreview.tagsText);
+      const startingIndex = galleryImages.length;
+
+      for (let i = 0; i < bulkUploadItems.length; i++) {
+        const item = bulkUploadItems[i];
+        const mediaUrl = await uploadToStorage(item.file, selectedCategory);
+        const { error } = await supabase.from('gallery_images').insert({
+          category: selectedCategory,
+          image_url: mediaUrl,
+          title: item.title.trim() || null,
+          description: item.description.trim() || null,
+          tags,
+          section_id: uploadPreview.sectionId.trim() ? uploadPreview.sectionId.trim() : null,
+          order_index: startingIndex + i,
+        });
+        if (error) {
+          showToast('error', 'Error adding media');
+          return;
+        }
+      }
+
+      showToast('success', 'Media added successfully!');
+      publishCmsUpdate();
+      fetchGalleryImages();
+      setShowUploadModal(false);
+      for (const item of bulkUploadItems) URL.revokeObjectURL(item.previewUrl);
+      setBulkUploadItems([]);
+      setUploadPreview({ file: null, url: '', title: '', description: '', tagsText: '', sectionId: '' });
     } catch (err) {
       console.error(err);
       const message =
@@ -596,17 +803,19 @@ export default function AdminDashboard() {
       image_url: uploadPreview.url.trim(),
       title: uploadPreview.title.trim() || null,
       description: uploadPreview.description.trim() || null,
+      tags: parseTagsText(uploadPreview.tagsText),
+      section_id: uploadPreview.sectionId.trim() ? uploadPreview.sectionId.trim() : null,
       order_index: galleryImages.length,
     });
 
     if (error) {
-      showToast('error', 'Error adding image');
+      showToast('error', 'Error adding media');
     } else {
-      showToast('success', 'Image added successfully!');
+      showToast('success', 'Media added successfully!');
       publishCmsUpdate();
       fetchGalleryImages();
       setShowUploadModal(false);
-      setUploadPreview({ file: null, url: '', title: '', description: '' });
+      setUploadPreview({ file: null, url: '', title: '', description: '', tagsText: '', sectionId: '' });
     }
     
     setIsUploading(false);
@@ -710,7 +919,13 @@ export default function AdminDashboard() {
     const img = galleryDraft.find((g) => g.id === id);
     if (!img) return;
     setEditingImageId(id);
-    setImageEditDraft({ title: img.title || '', description: img.description || '' });
+    setImageEditDraft({
+      image_url: img.image_url || '',
+      title: img.title || '',
+      description: img.description || '',
+      tagsText: (img.tags || []).join(', '),
+      sectionId: img.section_id || ''
+    });
   };
 
   const applyImageEdits = () => {
@@ -720,8 +935,11 @@ export default function AdminDashboard() {
         img.id === editingImageId
           ? {
               ...img,
+              image_url: imageEditDraft.image_url.trim() || img.image_url,
               title: imageEditDraft.title.trim() || null,
               description: imageEditDraft.description.trim() || null,
+              tags: parseTagsText(imageEditDraft.tagsText),
+              section_id: imageEditDraft.sectionId.trim() ? imageEditDraft.sectionId.trim() : null,
             }
           : img
       )
@@ -739,8 +957,11 @@ export default function AdminDashboard() {
         if (!original) return true;
         return (
           original.order_index !== img.order_index ||
+          (original.image_url || '') !== (img.image_url || '') ||
           (original.title || '') !== (img.title || '') ||
-          (original.description || '') !== (img.description || '')
+          (original.description || '') !== (img.description || '') ||
+          JSON.stringify(original.tags || []) !== JSON.stringify(img.tags || []) ||
+          (original.section_id || '') !== (img.section_id || '')
         );
       });
 
@@ -748,8 +969,11 @@ export default function AdminDashboard() {
         const { error } = await supabase
           .from('gallery_images')
           .update({
+            image_url: img.image_url,
             title: img.title,
             description: img.description,
+            tags: img.tags,
+            section_id: img.section_id,
             order_index: img.order_index,
           })
           .eq('id', img.id);
@@ -1140,8 +1364,12 @@ export default function AdminDashboard() {
                       </div>
                       <div className="aspect-video bg-black mb-4 overflow-hidden">
                         {url ? (
-                          url.match(/\.(mp4|webm|ogg)$/i) ? (
+                          isVideoUrl(url) ? (
                             <video src={url} controls className="w-full h-full object-cover" />
+                          ) : isEmbeddableUrl(url) ? (
+                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-b from-gray-900 to-black">
+                              <PlayCircle className="w-14 h-14 text-white/70" />
+                            </div>
                           ) : (
                             <img src={url} alt={slot.label} className="w-full h-full object-cover" />
                           )
@@ -1557,6 +1785,97 @@ export default function AdminDashboard() {
                 <p className="text-sm text-gray-400 mt-3">
                   Layout: <span className="text-white font-semibold uppercase">{layoutDraft}</span>
                 </p>
+                {layoutDraft === 'grouped' && (
+                  <div className="mt-5 border-2 border-gray-800 bg-black/30 p-4 text-sm text-gray-300 leading-relaxed">
+                    Use Sections to create “sets” (and cards/section links on the site): create sections below, then assign media to a section.
+                  </div>
+                )}
+              </div>
+
+              <div className="mb-6 border-2 border-gray-800 p-6">
+                <h3 className="text-lg font-bold uppercase tracking-wider mb-4 text-[#ff8c42] flex items-center gap-2">
+                  <Layout className="w-5 h-5" />
+                  Sections
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-[1fr_160px] gap-4">
+                  <input
+                    type="text"
+                    value={newSectionName}
+                    onChange={(e) => setNewSectionName(e.target.value)}
+                    placeholder="New section name"
+                    className="w-full px-4 py-3 bg-transparent border-2 border-gray-700 focus:border-[#ff8c42] outline-none transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={createSection}
+                    disabled={!newSectionName.trim()}
+                    className="px-6 py-3 border-2 border-[#ff8c42] text-[#ff8c42] font-bold uppercase tracking-wider hover:bg-[#ff8c42] hover:text-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Create
+                  </button>
+                </div>
+
+                <div className="mt-6 space-y-3">
+                  {gallerySections.map((s, idx) => (
+                    <div key={s.id} className="border-2 border-gray-800 p-4">
+                      <div className="grid grid-cols-1 lg:grid-cols-[1fr_220px] gap-4 items-center">
+                        <input
+                          type="text"
+                          value={s.name}
+                          onChange={(e) =>
+                            setGallerySections((prev) =>
+                              prev.map((p) => (p.id === s.id ? { ...p, name: e.target.value } : p))
+                            )
+                          }
+                          className="w-full px-4 py-3 bg-transparent border-2 border-gray-700 focus:border-[#ff8c42] outline-none transition-colors"
+                        />
+
+                        <div className="flex gap-2 justify-end">
+                          <button
+                            type="button"
+                            onClick={() => moveSection(s.id, -1)}
+                            disabled={idx === 0}
+                            className="p-3 border-2 border-gray-700 hover:border-[#ff8c42] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            aria-label="Move section up"
+                          >
+                            <ArrowUp className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => moveSection(s.id, 1)}
+                            disabled={idx === gallerySections.length - 1}
+                            className="p-3 border-2 border-gray-700 hover:border-[#ff8c42] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            aria-label="Move section down"
+                          >
+                            <ArrowDown className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => updateSectionName(s.id, s.name)}
+                            className="px-4 py-3 border-2 border-green-500 text-green-500 hover:bg-green-500 hover:text-black transition-colors font-bold uppercase tracking-wider"
+                          >
+                            Update
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => deleteSection(s.id)}
+                            className="p-3 border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-all"
+                            aria-label="Delete section"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {gallerySections.length === 0 && (
+                    <div className="text-sm text-gray-500 uppercase tracking-wider">
+                      No sections yet
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="flex flex-wrap gap-4">
@@ -1566,6 +1885,7 @@ export default function AdminDashboard() {
                   <input
                     type="file"
                     accept={activeTab === 'cinematography' ? 'image/*,video/*' : 'image/*'}
+                    multiple
                     onChange={handleFileSelect}
                     className="hidden"
                   />
@@ -1677,12 +1997,16 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                   <div className="aspect-video relative overflow-hidden mb-4 bg-gray-900">
-                    {image.image_url.match(/\.(mp4|webm|ogg)$/i) ? (
+                    {isVideoUrl(image.image_url) ? (
                       <video
                         src={image.image_url}
                         controls
                         className="w-full h-full object-cover"
                       />
+                    ) : isEmbeddableUrl(image.image_url) ? (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-b from-gray-900 to-black">
+                        <PlayCircle className="w-12 h-12 text-white/70" />
+                      </div>
                     ) : (
                       <img
                         src={image.image_url}
@@ -1692,6 +2016,14 @@ export default function AdminDashboard() {
                     )}
                   </div>
                   <div className="space-y-2">
+                    <button
+                      onClick={() => window.open(image.image_url, '_blank', 'noopener,noreferrer')}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2 border-2 border-gray-600 text-gray-300 hover:border-[#ff8c42] hover:text-[#ff8c42] transition-all"
+                      type="button"
+                    >
+                      <Eye className="w-4 h-4" />
+                      Open
+                    </button>
                     <p className="text-sm text-gray-400">
                       <span className="font-semibold">Title:</span> {image.title || 'N/A'}
                     </p>
@@ -1741,14 +2073,14 @@ export default function AdminDashboard() {
                   <label className="block text-sm uppercase tracking-wider mb-2 text-gray-400">
                     Media URL
                   </label>
-                  <input
-                    type="url"
-                    value={pageMediaDraft.url}
-                    onChange={(e) => setPageMediaDraft({ ...pageMediaDraft, url: e.target.value })}
-                    placeholder="https://example.com/file.jpg"
-                    className="w-full px-4 py-3 bg-black border-2 border-gray-700 focus:border-[#ff8c42] outline-none text-white"
-                  />
-                </div>
+                    <input
+                      type="url"
+                      value={pageMediaDraft.url}
+                      onChange={(e) => setPageMediaDraft({ ...pageMediaDraft, url: e.target.value })}
+                      placeholder="https://example.com/file.jpg (or YouTube/Instagram link)"
+                      className="w-full px-4 py-3 bg-black border-2 border-gray-700 focus:border-[#ff8c42] outline-none text-white"
+                    />
+                  </div>
 
                 <div className="mb-6">
                   <label className="block text-sm uppercase tracking-wider mb-2 text-gray-400">
@@ -1811,6 +2143,18 @@ export default function AdminDashboard() {
                     {isUploading ? 'Saving...' : 'Save'}
                   </button>
                 </div>
+                {pageMediaDraft.url.trim() && (
+                  <div className="mt-4">
+                    <button
+                      type="button"
+                      onClick={() => window.open(pageMediaDraft.url.trim(), '_blank', 'noopener,noreferrer')}
+                      className="w-full flex items-center justify-center gap-2 px-6 py-3 border-2 border-gray-600 text-gray-200 hover:border-[#ff8c42] hover:text-[#ff8c42] transition-colors"
+                    >
+                      <Eye className="w-4 h-4" />
+                      Open URL
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -1929,6 +2273,38 @@ export default function AdminDashboard() {
 
                 <div className="mb-4">
                   <label className="block text-sm uppercase tracking-wider mb-2 text-gray-400">
+                    URL
+                  </label>
+                  <input
+                    type="url"
+                    value={imageEditDraft.image_url}
+                    onChange={(e) => setImageEditDraft({ ...imageEditDraft, image_url: e.target.value })}
+                    className="w-full px-4 py-3 bg-black border-2 border-gray-700 focus:border-[#ff8c42] outline-none text-white"
+                  />
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm uppercase tracking-wider mb-2 text-gray-400">
+                    Section
+                  </label>
+                  <select
+                    value={imageEditDraft.sectionId}
+                    onChange={(e) => setImageEditDraft({ ...imageEditDraft, sectionId: e.target.value })}
+                    className="w-full px-4 py-3 bg-black border-2 border-gray-700 focus:border-[#ff8c42] outline-none text-white"
+                  >
+                    <option value="" className="bg-gray-900">
+                      No Section
+                    </option>
+                    {gallerySections.map((s) => (
+                      <option key={s.id} value={s.id} className="bg-gray-900">
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm uppercase tracking-wider mb-2 text-gray-400">
                     Title
                   </label>
                   <input
@@ -1948,6 +2324,19 @@ export default function AdminDashboard() {
                     onChange={(e) => setImageEditDraft({ ...imageEditDraft, description: e.target.value })}
                     rows={4}
                     className="w-full px-4 py-3 bg-black border-2 border-gray-700 focus:border-[#ff8c42] outline-none text-white resize-none"
+                  />
+                </div>
+
+                <div className="mb-6">
+                  <label className="block text-sm uppercase tracking-wider mb-2 text-gray-400">
+                    Tags (comma-separated)
+                  </label>
+                  <input
+                    type="text"
+                    value={imageEditDraft.tagsText}
+                    onChange={(e) => setImageEditDraft({ ...imageEditDraft, tagsText: e.target.value })}
+                    placeholder="wedding, portraits"
+                    className="w-full px-4 py-3 bg-black border-2 border-gray-700 focus:border-[#ff8c42] outline-none text-white"
                   />
                 </div>
 
@@ -1976,11 +2365,15 @@ export default function AdminDashboard() {
             <div className="bg-gray-900 border-2 border-[#ff8c42] rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <div className="p-6">
                 <h2 className="text-2xl font-bold uppercase tracking-wider mb-6 text-[#ff8c42]">
-                  {uploadPreview.file ? 'Upload' : 'Add'} {activeTab === 'cinematography' ? 'Video/Image' : 'Image'}
+                  {bulkUploadItems.length > 0
+                    ? `Upload ${bulkUploadItems.length} Files`
+                    : uploadPreview.file
+                      ? 'Upload'
+                      : 'Add'} {activeTab === 'cinematography' ? 'Video/Image' : 'Image'}
                 </h2>
 
                 {/* URL Input (only if no file selected) */}
-                {!uploadPreview.file && (
+                {!uploadPreview.file && bulkUploadItems.length === 0 && (
                   <div className="mb-6">
                     <label className="block text-sm uppercase tracking-wider mb-2 text-gray-400">
                       {activeTab === 'cinematography' ? 'Image/Video URL' : 'Image URL'} <span className="text-red-500">*</span>
@@ -1989,7 +2382,7 @@ export default function AdminDashboard() {
                       type="url"
                       value={uploadPreview.url}
                       onChange={(e) => setUploadPreview({ ...uploadPreview, url: e.target.value })}
-                      placeholder="https://example.com/image.jpg"
+                      placeholder="https://example.com/image.jpg (or YouTube/Instagram link)"
                       className="w-full px-4 py-3 bg-black border-2 border-gray-700 focus:border-[#ff8c42] outline-none text-white"
                       required
                     />
@@ -1997,18 +2390,22 @@ export default function AdminDashboard() {
                 )}
 
                 {/* Preview */}
-                {(uploadPreview.file || uploadPreview.url) && (
+                {bulkUploadItems.length === 0 && (uploadPreview.file || uploadPreview.url) && (
                   <div className="mb-6">
                     <label className="block text-sm uppercase tracking-wider mb-2 text-gray-400">
                       Preview
                     </label>
                     <div className="aspect-video bg-black rounded overflow-hidden">
-                      {uploadPreview.file?.type.startsWith('video/') || uploadPreview.url.match(/\.(mp4|webm|ogg)$/i) ? (
+                      {uploadPreview.file?.type.startsWith('video/') || isVideoUrl(uploadPreview.url) ? (
                         <video
                           src={uploadPreview.file ? uploadPreview.url : uploadPreview.url}
                           controls
                           className="w-full h-full object-contain"
                         />
+                      ) : isEmbeddableUrl(uploadPreview.url) ? (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-b from-gray-900 to-black">
+                          <PlayCircle className="w-12 h-12 text-white/70" />
+                        </div>
                       ) : (
                         <img
                           src={uploadPreview.file ? uploadPreview.url : uploadPreview.url}
@@ -2020,6 +2417,16 @@ export default function AdminDashboard() {
                         />
                       )}
                     </div>
+                    {uploadPreview.url.trim() && !uploadPreview.file && (
+                      <button
+                        type="button"
+                        onClick={() => window.open(uploadPreview.url.trim(), '_blank', 'noopener,noreferrer')}
+                        className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2 border-2 border-gray-600 text-gray-200 hover:border-[#ff8c42] hover:text-[#ff8c42] transition-colors"
+                      >
+                        <Eye className="w-4 h-4" />
+                        Open URL
+                      </button>
+                    )}
                     {uploadPreview.file && (
                       <p className="text-xs text-gray-500 mt-2">
                         File: {uploadPreview.file.name} ({((uploadPreview.file.size || 0) / 1024 / 1024).toFixed(2)} MB)
@@ -2028,8 +2435,121 @@ export default function AdminDashboard() {
                   </div>
                 )}
 
+                {bulkUploadItems.length > 0 && (
+                  <div className="mb-6 space-y-6">
+                    <div>
+                      <label className="block text-sm uppercase tracking-wider mb-2 text-gray-400">
+                        Section for all
+                      </label>
+                      <select
+                        value={uploadPreview.sectionId}
+                        onChange={(e) => setUploadPreview({ ...uploadPreview, sectionId: e.target.value })}
+                        className="w-full px-4 py-3 bg-black border-2 border-gray-700 focus:border-[#ff8c42] outline-none text-white"
+                      >
+                        <option value="" className="bg-gray-900">
+                          No Section
+                        </option>
+                        {gallerySections.map((s) => (
+                          <option key={s.id} value={s.id} className="bg-gray-900">
+                            {s.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm uppercase tracking-wider mb-2 text-gray-400">
+                        Tags for all (comma-separated)
+                      </label>
+                      <input
+                        type="text"
+                        value={uploadPreview.tagsText}
+                        onChange={(e) => setUploadPreview({ ...uploadPreview, tagsText: e.target.value })}
+                        placeholder="wedding, portraits"
+                        className="w-full px-4 py-3 bg-black border-2 border-gray-700 focus:border-[#ff8c42] outline-none text-white"
+                      />
+                    </div>
+
+                    <div className="space-y-4">
+                      {bulkUploadItems.map((item, idx) => (
+                        <div key={`${item.file.name}-${idx}`} className="border-2 border-gray-800 rounded p-4">
+                          <div className="flex items-center justify-between gap-4 mb-3">
+                            <div className="text-sm text-gray-200 truncate">{item.file.name}</div>
+                            <div className="text-xs text-gray-500">
+                              {((item.file.size || 0) / 1024 / 1024).toFixed(2)} MB
+                            </div>
+                          </div>
+
+                          <div className="aspect-video bg-black rounded overflow-hidden mb-4">
+                            {item.file.type.startsWith('video/') ? (
+                              <video src={item.previewUrl} controls className="w-full h-full object-contain" />
+                            ) : (
+                              <img src={item.previewUrl} alt="Preview" className="w-full h-full object-contain" />
+                            )}
+                          </div>
+
+                          <div className="mb-3">
+                            <label className="block text-xs uppercase tracking-wider mb-2 text-gray-400">
+                              Title (Optional)
+                            </label>
+                            <input
+                              type="text"
+                              value={item.title}
+                              onChange={(e) =>
+                                setBulkUploadItems((prev) =>
+                                  prev.map((p, pIdx) => (pIdx === idx ? { ...p, title: e.target.value } : p))
+                                )
+                              }
+                              className="w-full px-4 py-3 bg-black border-2 border-gray-700 focus:border-[#ff8c42] outline-none text-white"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs uppercase tracking-wider mb-2 text-gray-400">
+                              Description (Optional)
+                            </label>
+                            <textarea
+                              value={item.description}
+                              onChange={(e) =>
+                                setBulkUploadItems((prev) =>
+                                  prev.map((p, pIdx) => (pIdx === idx ? { ...p, description: e.target.value } : p))
+                                )
+                              }
+                              rows={3}
+                              className="w-full px-4 py-3 bg-black border-2 border-gray-700 focus:border-[#ff8c42] outline-none text-white resize-none"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Title Input */}
-                <div className="mb-4">
+                {bulkUploadItems.length === 0 && (
+                  <div className="mb-6">
+                    <label className="block text-sm uppercase tracking-wider mb-2 text-gray-400">
+                      Section
+                    </label>
+                    <select
+                      value={uploadPreview.sectionId}
+                      onChange={(e) => setUploadPreview({ ...uploadPreview, sectionId: e.target.value })}
+                      className="w-full px-4 py-3 bg-black border-2 border-gray-700 focus:border-[#ff8c42] outline-none text-white"
+                    >
+                      <option value="" className="bg-gray-900">
+                        No Section
+                      </option>
+                      {gallerySections.map((s) => (
+                        <option key={s.id} value={s.id} className="bg-gray-900">
+                          {s.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {bulkUploadItems.length === 0 && (
+                  <div className="mb-4">
                   <label className="block text-sm uppercase tracking-wider mb-2 text-gray-400">
                     Title (Optional)
                   </label>
@@ -2040,10 +2560,12 @@ export default function AdminDashboard() {
                     placeholder="Enter title"
                     className="w-full px-4 py-3 bg-black border-2 border-gray-700 focus:border-[#ff8c42] outline-none text-white"
                   />
-                </div>
+                  </div>
+                )}
 
                 {/* Description Input */}
-                <div className="mb-6">
+                {bulkUploadItems.length === 0 && (
+                  <div className="mb-6">
                   <label className="block text-sm uppercase tracking-wider mb-2 text-gray-400">
                     Description (Optional)
                   </label>
@@ -2054,7 +2576,23 @@ export default function AdminDashboard() {
                     rows={4}
                     className="w-full px-4 py-3 bg-black border-2 border-gray-700 focus:border-[#ff8c42] outline-none text-white resize-none"
                   />
-                </div>
+                  </div>
+                )}
+
+                {bulkUploadItems.length === 0 && (
+                  <div className="mb-6">
+                    <label className="block text-sm uppercase tracking-wider mb-2 text-gray-400">
+                      Tags (comma-separated)
+                    </label>
+                    <input
+                      type="text"
+                      value={uploadPreview.tagsText}
+                      onChange={(e) => setUploadPreview({ ...uploadPreview, tagsText: e.target.value })}
+                      placeholder="wedding, portraits"
+                      className="w-full px-4 py-3 bg-black border-2 border-gray-700 focus:border-[#ff8c42] outline-none text-white"
+                    />
+                  </div>
+                )}
 
                 {/* Category Info */}
                 <div className="mb-6 p-4 bg-black/50 rounded">
@@ -2076,11 +2614,30 @@ export default function AdminDashboard() {
                     Cancel
                   </button>
                   <button
-                    onClick={uploadPreview.file ? handleUploadSubmit : handleAddUrlSubmit}
-                    disabled={isUploading || (!uploadPreview.file && !uploadPreview.url.trim())}
+                    onClick={
+                      bulkUploadItems.length > 0
+                        ? handleBulkUploadSubmit
+                        : uploadPreview.file
+                          ? handleUploadSubmit
+                          : handleAddUrlSubmit
+                    }
+                    disabled={
+                      isUploading ||
+                      (bulkUploadItems.length === 0 && !uploadPreview.file && !uploadPreview.url.trim())
+                    }
                     className="flex-1 px-6 py-3 bg-[#ff8c42] text-black font-bold uppercase tracking-wider hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isUploading ? (uploadPreview.file ? 'Uploading...' : 'Adding...') : (uploadPreview.file ? 'Upload' : 'Add')}
+                    {isUploading
+                      ? bulkUploadItems.length > 0
+                        ? 'Uploading...'
+                        : uploadPreview.file
+                          ? 'Uploading...'
+                          : 'Adding...'
+                      : bulkUploadItems.length > 0
+                        ? 'Upload'
+                        : uploadPreview.file
+                          ? 'Upload'
+                          : 'Add'}
                   </button>
                 </div>
               </div>
