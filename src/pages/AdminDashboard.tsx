@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, LayoutType, publishCmsUpdate } from '../lib/supabase';
+import { getEmbedSrc, isEmbeddableUrl, isVideoUrl } from '../lib/media';
 import { LogOut, Trash2, Plus, Image as ImageIcon, Layout, Save, Eye, Pencil, ArrowUp, ArrowDown, PlayCircle } from 'lucide-react';
 
 interface ContentItem {
@@ -99,47 +100,6 @@ export default function AdminDashboard() {
     } catch {
       return url.split('?')[0] || url;
     }
-  };
-
-  const isVideoUrl = (url: string) => /\.(mp4|webm|ogg)$/i.test(stripQuery(url));
-
-  const getEmbedSrc = (url: string) => {
-    try {
-      const parsed = new URL(url);
-      const host = parsed.hostname.replace(/^www\./, '');
-      
-      if (host === 'youtu.be') {
-        return `https://www.youtube.com/embed${parsed.pathname}`;
-      }
-      if (host.endsWith('youtube.com')) {
-        const v = parsed.searchParams.get('v');
-        if (v) return `https://www.youtube.com/embed/${v}`;
-        const segments = parsed.pathname.split('/').filter(Boolean);
-        if (segments.includes('embed')) return url;
-        if (segments.includes('v')) return `https://www.youtube.com/embed/${segments[segments.indexOf('v') + 1]}`;
-        if (segments.includes('shorts')) return `https://www.youtube.com/embed/${segments[segments.indexOf('shorts') + 1]}`;
-      }
-      if (host.endsWith('vimeo.com')) {
-        const id = parsed.pathname.split('/').pop();
-        if (id && /^\d+$/.test(id)) return `https://player.vimeo.com/video/${id}`;
-      }
-    } catch {
-      return null;
-    }
-    return null;
-  };
-
-  const isEmbeddableUrl = (url: string) => {
-    try {
-      const parsed = new URL(url);
-      const host = parsed.hostname.replace(/^www\./, '');
-      if (host === 'youtu.be' || host.endsWith('youtube.com')) return true;
-      if (host.endsWith('vimeo.com')) return true;
-      if (host.endsWith('instagram.com')) return true;
-    } catch {
-      return false;
-    }
-    return false;
   };
 
   const parseTagsText = (text: string) => {

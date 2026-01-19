@@ -1,6 +1,7 @@
 import { ChevronDown } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { subscribeToCmsUpdates, supabase } from '../lib/supabase';
+import { getEmbedSrc, isEmbeddableUrl } from '../lib/media';
 
 export default function Hero() {
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
@@ -84,7 +85,30 @@ export default function Hero() {
       {/* Background Video/Image */}
       <div className="absolute inset-0 z-0">
         {backgroundUrl ? (
-          backgroundUrl.match(/\.(mp4|webm|ogg)$/i) ? (
+          isEmbeddableUrl(backgroundUrl) ? (
+             <div className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden">
+               <iframe
+                 src={(() => {
+                   const baseSrc = getEmbedSrc(backgroundUrl);
+                   if (!baseSrc) return '';
+                   const separator = baseSrc.includes('?') ? '&' : '?';
+                   if (baseSrc.includes('youtube.com')) {
+                     const videoId = baseSrc.split('/').pop()?.split('?')[0];
+                     return `${baseSrc}${separator}autoplay=1&mute=1&controls=0&loop=1&playlist=${videoId}&showinfo=0&modestbranding=1&rel=0&playsinline=1&enablejsapi=1&disablekb=1&iv_load_policy=3`;
+                   }
+                   if (baseSrc.includes('vimeo.com')) {
+                     return `${baseSrc}${separator}background=1&autoplay=1&loop=1&byline=0&title=0`;
+                   }
+                   return baseSrc;
+                 })()}
+                 className="w-full h-full object-cover scale-150"
+                 frameBorder="0"
+                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                 allowFullScreen
+                 style={{ opacity: backgroundOpacity, pointerEvents: 'none' }}
+               />
+             </div>
+          ) : backgroundUrl.match(/\.(mp4|webm|ogg)$/i) ? (
             <video autoPlay muted loop playsInline className="w-full h-full object-cover" style={{ opacity: backgroundOpacity }}>
               <source src={backgroundUrl} />
             </video>
