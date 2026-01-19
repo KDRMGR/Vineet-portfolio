@@ -27,6 +27,7 @@ interface GallerySection {
   category: string;
   name: string;
   order_index: number;
+  image_url?: string;
 }
 
 interface CategoryItem {
@@ -38,7 +39,7 @@ export default function AdminDashboard() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<
-    'content' | 'gallery' | 'cinematography' | 'photography' | 'pages' | 'media'
+    'content' | 'gallery' | 'photography' | 'pages' | 'media'
   >('content');
   const [content, setContent] = useState<ContentItem[]>([]);
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
@@ -66,7 +67,7 @@ export default function AdminDashboard() {
   const [bulkUploadItems, setBulkUploadItems] = useState<
     Array<{ file: File; previewUrl: string; title: string; description: string }>
   >([]);
-  const [selectedPage, setSelectedPage] = useState<'home' | 'about' | 'contact' | 'photography' | 'cinematography'>('home');
+  const [selectedPage, setSelectedPage] = useState<'home' | 'about' | 'contact' | 'photography'>('home');
   const [pageMedia, setPageMedia] = useState<Record<string, GalleryImage | null>>({});
   const [siteMedia, setSiteMedia] = useState<Record<string, GalleryImage | null>>({});
   const [pageMediaDraft, setPageMediaDraft] = useState({ category: '', url: '', file: null as File | null });
@@ -102,6 +103,32 @@ export default function AdminDashboard() {
 
   const isVideoUrl = (url: string) => /\.(mp4|webm|ogg)$/i.test(stripQuery(url));
 
+  const getEmbedSrc = (url: string) => {
+    try {
+      const parsed = new URL(url);
+      const host = parsed.hostname.replace(/^www\./, '');
+      
+      if (host === 'youtu.be') {
+        return `https://www.youtube.com/embed${parsed.pathname}`;
+      }
+      if (host.endsWith('youtube.com')) {
+        const v = parsed.searchParams.get('v');
+        if (v) return `https://www.youtube.com/embed/${v}`;
+        const segments = parsed.pathname.split('/').filter(Boolean);
+        if (segments.includes('embed')) return url;
+        if (segments.includes('v')) return `https://www.youtube.com/embed/${segments[segments.indexOf('v') + 1]}`;
+        if (segments.includes('shorts')) return `https://www.youtube.com/embed/${segments[segments.indexOf('shorts') + 1]}`;
+      }
+      if (host.endsWith('vimeo.com')) {
+        const id = parsed.pathname.split('/').pop();
+        if (id && /^\d+$/.test(id)) return `https://player.vimeo.com/video/${id}`;
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  };
+
   const isEmbeddableUrl = (url: string) => {
     try {
       const parsed = new URL(url);
@@ -131,22 +158,6 @@ export default function AdminDashboard() {
     { id: 'people', name: 'People & Places' },
     { id: 'nightlife', name: 'Nightlife' },
     { id: 'wedding', name: "Wedding & Others" },
-  ];
-
-  const defaultCinematographyCategories: CategoryItem[] = [
-    { id: 'cinematography-highlight-reels', name: 'Highlight Reels' },
-    { id: 'cinematography-wedding-social-media', name: 'Wedding Social Media' },
-    { id: 'cinematography-short-films', name: 'Short Films' },
-    { id: 'cinematography-social-media-event-decor', name: 'Social Media Event Decor' },
-    { id: 'cinematography-tata-marathon', name: 'Tata Marathon' },
-    { id: 'cinematography-starbucks', name: 'Starbucks' },
-    { id: 'cinematography-others', name: 'Others' },
-    { id: 'corporate', name: 'Corporate Events' },
-    { id: 'concerts', name: 'Concerts' },
-    { id: 'commercial', name: 'Commercial' },
-    { id: 'events', name: 'Events' },
-    { id: 'documentary', name: 'Documentary' },
-    { id: 'live', name: 'Live Shows' },
   ];
 
   const defaultPhotographyCategories: CategoryItem[] = [
@@ -199,13 +210,6 @@ export default function AdminDashboard() {
         { key: 'subheading', label: 'Photography Subheading' },
       ],
     },
-    cinematography: {
-      section: 'cinematography',
-      fields: [
-        { key: 'heading', label: 'Cinematography Heading' },
-        { key: 'subheading', label: 'Cinematography Subheading' },
-      ],
-    },
   };
 
   const pageMediaSlots: Record<
@@ -223,7 +227,6 @@ export default function AdminDashboard() {
       { category: 'contact-hero-secondary-2', label: 'Contact Hero Secondary 2 (image)', accept: 'image/*' },
     ],
     photography: [{ category: 'hero-photography', label: 'Photography Hero (image/video)', accept: 'image/*,video/*' }],
-    cinematography: [{ category: 'hero-cinematography', label: 'Cinematography Hero (image/video)', accept: 'image/*,video/*' }],
   };
 
   const siteMediaSlots: Array<{ category: string; label: string; accept: string }> = [
@@ -233,7 +236,6 @@ export default function AdminDashboard() {
     { category: 'contact-hero-secondary-1', label: 'Contact Hero Secondary 1 (image)', accept: 'image/*' },
     { category: 'contact-hero-secondary-2', label: 'Contact Hero Secondary 2 (image)', accept: 'image/*' },
     { category: 'hero-photography', label: 'Photography Page Hero (image/video)', accept: 'image/*,video/*' },
-    { category: 'hero-cinematography', label: 'Cinematography Page Hero (image/video)', accept: 'image/*,video/*' },
   ];
 
   const showToast = (type: 'success' | 'error', text: string) => {
@@ -273,20 +275,20 @@ export default function AdminDashboard() {
     }
   };
 
-  const categoriesKeyForSection = (section: 'photography' | 'cinematography') => contentKey(section, 'categories');
+  const categoriesKeyForSection = (section: 'photography') => contentKey(section, 'categories');
 
-  const getCategoriesForSection = (section: 'photography' | 'cinematography') => {
-    const fallback = section === 'photography' ? defaultPhotographyCategories : defaultCinematographyCategories;
+  const getCategoriesForSection = (section: 'photography') => {
+    const fallback = defaultPhotographyCategories;
     return safeParseCategoryList(contentDraft[categoriesKeyForSection(section)], fallback);
   };
 
-  const setCategoriesForSection = (section: 'photography' | 'cinematography', next: CategoryItem[]) => {
+  const setCategoriesForSection = (section: 'photography', next: CategoryItem[]) => {
     const key = categoriesKeyForSection(section);
     setContentDraft((prev) => ({ ...prev, [key]: JSON.stringify(next) }));
     setHasUnsavedChanges(true);
   };
 
-  const addCategoryToSection = (section: 'photography' | 'cinematography') => {
+  const addCategoryToSection = (section: 'photography') => {
     const id = newCategoryDraft.id.trim();
     const name = newCategoryDraft.name.trim();
     if (!id || !name) return;
@@ -299,14 +301,14 @@ export default function AdminDashboard() {
     setNewCategoryDraft({ id: '', name: '' });
   };
 
-  const renameCategoryInSection = (section: 'photography' | 'cinematography', id: string, nextName: string) => {
+  const renameCategoryInSection = (section: 'photography', id: string, nextName: string) => {
     const name = nextName;
     const current = getCategoriesForSection(section);
     const next = current.map((c) => (c.id === id ? { ...c, name } : c));
     setCategoriesForSection(section, next);
   };
 
-  const moveCategoryInSection = (section: 'photography' | 'cinematography', id: string, dir: -1 | 1) => {
+  const moveCategoryInSection = (section: 'photography', id: string, dir: -1 | 1) => {
     const current = getCategoriesForSection(section);
     const fromIdx = current.findIndex((c) => c.id === id);
     if (fromIdx === -1) return;
@@ -318,7 +320,7 @@ export default function AdminDashboard() {
     setCategoriesForSection(section, next);
   };
 
-  const deleteCategoryInSection = (section: 'photography' | 'cinematography', id: string) => {
+  const deleteCategoryInSection = (section: 'photography', id: string) => {
     const ok = confirm('Remove this category from the page? Existing media will not be deleted.');
     if (!ok) return;
     const current = getCategoriesForSection(section);
@@ -366,20 +368,14 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (!user) return;
-    if (
-      activeTab === 'content' ||
-      activeTab === 'pages' ||
-      activeTab === 'media' ||
-      activeTab === 'photography' ||
-      activeTab === 'cinematography'
-    ) {
+    if (activeTab === 'content' || activeTab === 'pages' || activeTab === 'media' || activeTab === 'photography') {
       fetchContent();
     }
   }, [user, activeTab]);
 
   useEffect(() => {
     if (!user) return;
-    if (activeTab === 'gallery' || activeTab === 'cinematography' || activeTab === 'photography') {
+    if (activeTab === 'gallery' || activeTab === 'photography') {
       fetchGalleryImages();
       fetchGalleryLayout();
       fetchGallerySections();
@@ -387,20 +383,18 @@ export default function AdminDashboard() {
   }, [user, activeTab, selectedCategory]);
 
   const photographyCategories = getCategoriesForSection('photography');
-  const cinematographyCategories = getCategoriesForSection('cinematography');
 
   useEffect(() => {
     setNewCategoryDraft({ id: '', name: '' });
   }, [activeTab]);
 
   useEffect(() => {
-    const options =
-      activeTab === 'cinematography' ? cinematographyCategories : activeTab === 'photography' ? photographyCategories : categories;
+    const options = activeTab === 'photography' ? photographyCategories : categories;
     if (!options.some((c) => c.id === selectedCategory)) {
       const next = options[0]?.id;
       if (next) setSelectedCategory(next);
     }
-  }, [activeTab, cinematographyCategories, photographyCategories, selectedCategory]);
+  }, [activeTab, photographyCategories, selectedCategory]);
 
   useEffect(() => {
     if (!user) return;
@@ -496,6 +490,26 @@ export default function AdminDashboard() {
     showToast('success', 'Section updated successfully!');
     publishCmsUpdate();
     fetchGallerySections();
+  };
+
+  const updateSectionImage = async (id: string, file: File) => {
+    try {
+      showToast('success', 'Uploading section image...');
+      const url = await uploadToStorage(file, 'sections');
+      const { error } = await supabase
+        .from('gallery_sections')
+        .update({ image_url: url })
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      showToast('success', 'Section image updated!');
+      publishCmsUpdate();
+      fetchGallerySections();
+    } catch (error) {
+      console.error(error);
+      showToast('error', 'Error updating section image');
+    }
   };
 
   const deleteSection = async (id: string) => {
@@ -634,7 +648,8 @@ export default function AdminDashboard() {
   };
 
   const upsertPageMediaUrl = async (category: string, imageUrl: string) => {
-    const existing = pageMedia[category] || siteMedia[category];
+    // Determine the correct state source based on the active tab to avoid stale data
+    const existing = activeTab === 'media' ? siteMedia[category] : pageMedia[category];
 
     const payload = {
       category,
@@ -1183,16 +1198,6 @@ export default function AdminDashboard() {
             Gallery Management
           </button>
           <button
-            onClick={() => guardUnsaved(() => setActiveTab('cinematography'))}
-            className={`px-6 py-3 uppercase tracking-wider font-semibold transition-colors ${
-              activeTab === 'cinematography'
-                ? 'text-[#ff8c42] border-b-2 border-[#ff8c42]'
-                : 'text-gray-500 hover:text-white'
-            }`}
-          >
-            Cinematography
-          </button>
-          <button
             onClick={() => guardUnsaved(() => setActiveTab('photography'))}
             className={`px-6 py-3 uppercase tracking-wider font-semibold transition-colors ${
               activeTab === 'photography'
@@ -1279,7 +1284,6 @@ export default function AdminDashboard() {
                   { id: 'home', name: 'Home' },
                   { id: 'about', name: 'About' },
                   { id: 'photography', name: 'Photography' },
-                  { id: 'cinematography', name: 'Cinematography' },
                   { id: 'contact', name: 'Contact' },
                 ].map((p) => (
                   <button
@@ -1364,12 +1368,15 @@ export default function AdminDashboard() {
                       </div>
                       <div className="aspect-video bg-black mb-4 overflow-hidden">
                         {url ? (
-                          isVideoUrl(url) ? (
+                          isEmbeddableUrl(url) ? (
+                            <iframe
+                              src={getEmbedSrc(url) || url}
+                              className="w-full h-full"
+                              frameBorder="0"
+                              allowFullScreen
+                            />
+                          ) : isVideoUrl(url) ? (
                             <video src={url} controls className="w-full h-full object-cover" />
-                          ) : isEmbeddableUrl(url) ? (
-                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-b from-gray-900 to-black">
-                              <PlayCircle className="w-14 h-14 text-white/70" />
-                            </div>
                           ) : (
                             <img src={url} alt={slot.label} className="w-full h-full object-cover" />
                           )
@@ -1600,7 +1607,14 @@ export default function AdminDashboard() {
                       </div>
                       <div className="aspect-video bg-black mb-4 overflow-hidden">
                         {url ? (
-                          url.match(/\.(mp4|webm|ogg)$/i) ? (
+                          isEmbeddableUrl(url) ? (
+                            <iframe
+                              src={getEmbedSrc(url) || url}
+                              className="w-full h-full"
+                              frameBorder="0"
+                              allowFullScreen
+                            />
+                          ) : url.match(/\.(mp4|webm|ogg)$/i) ? (
                             <video src={url} controls className="w-full h-full object-cover" />
                           ) : (
                             <img src={url} alt={slot.label} className="w-full h-full object-cover" />
@@ -1649,12 +1663,12 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {(activeTab === 'gallery' || activeTab === 'cinematography' || activeTab === 'photography') && (
+        {(activeTab === 'gallery' || activeTab === 'photography') && (
           <div>
-            {(activeTab === 'cinematography' || activeTab === 'photography') &&
+            {activeTab === 'photography' &&
               (() => {
-                const section = activeTab === 'photography' ? 'photography' : 'cinematography';
-                const list = section === 'photography' ? photographyCategories : cinematographyCategories;
+                const section = 'photography';
+                const list = photographyCategories;
                 return (
                   <div className="mb-10 border-2 border-gray-800 p-6">
                     <h2 className="text-2xl font-bold uppercase tracking-wider mb-6 text-[#ff8c42]">
@@ -1745,12 +1759,7 @@ export default function AdminDashboard() {
                 onChange={(e) => guardUnsaved(() => setSelectedCategory(e.target.value))}
                 className="w-full md:w-96 px-4 py-3 bg-transparent border-2 border-gray-700 focus:border-[#ff8c42] outline-none transition-colors"
               >
-                {(activeTab === 'cinematography'
-                  ? cinematographyCategories
-                  : activeTab === 'photography'
-                    ? photographyCategories
-                    : categories
-                ).map((cat) => (
+                {(activeTab === 'photography' ? photographyCategories : categories).map((cat) => (
                   <option key={cat.id} value={cat.id} className="bg-gray-900">
                     {cat.name}
                   </option>
@@ -1819,7 +1828,26 @@ export default function AdminDashboard() {
                 <div className="mt-6 space-y-3">
                   {gallerySections.map((s, idx) => (
                     <div key={s.id} className="border-2 border-gray-800 p-4">
-                      <div className="grid grid-cols-1 lg:grid-cols-[1fr_220px] gap-4 items-center">
+                      <div className="grid grid-cols-1 lg:grid-cols-[80px_1fr_220px] gap-4 items-center">
+                        <div className="relative w-20 h-20 bg-gray-900 border border-gray-700 flex items-center justify-center overflow-hidden group">
+                          {s.image_url ? (
+                            <img src={s.image_url} alt={s.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <ImageIcon className="w-6 h-6 text-gray-600" />
+                          )}
+                          <label className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity">
+                            <Pencil className="w-4 h-4 text-white" />
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                if (e.target.files?.[0]) updateSectionImage(s.id, e.target.files[0]);
+                              }}
+                            />
+                          </label>
+                        </div>
+
                         <input
                           type="text"
                           value={s.name}
@@ -1881,10 +1909,10 @@ export default function AdminDashboard() {
               <div className="flex flex-wrap gap-4">
                 <label className="flex items-center gap-2 px-6 py-3 bg-[#ff8c42] text-black font-bold uppercase tracking-wider hover:bg-white transition-colors cursor-pointer">
                   <ImageIcon className="w-5 h-5" />
-                  Upload {activeTab === 'cinematography' ? 'Video/Image' : 'Image'}
+                  Upload Image
                   <input
                     type="file"
-                    accept={activeTab === 'cinematography' ? 'image/*,video/*' : 'image/*'}
+                    accept="image/*"
                     multiple
                     onChange={handleFileSelect}
                     className="hidden"
@@ -2369,14 +2397,14 @@ export default function AdminDashboard() {
                     ? `Upload ${bulkUploadItems.length} Files`
                     : uploadPreview.file
                       ? 'Upload'
-                      : 'Add'} {activeTab === 'cinematography' ? 'Video/Image' : 'Image'}
+                      : 'Add'} Image
                 </h2>
 
                 {/* URL Input (only if no file selected) */}
                 {!uploadPreview.file && bulkUploadItems.length === 0 && (
                   <div className="mb-6">
                     <label className="block text-sm uppercase tracking-wider mb-2 text-gray-400">
-                      {activeTab === 'cinematography' ? 'Image/Video URL' : 'Image URL'} <span className="text-red-500">*</span>
+                      Image URL <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="url"
@@ -2403,9 +2431,12 @@ export default function AdminDashboard() {
                           className="w-full h-full object-contain"
                         />
                       ) : isEmbeddableUrl(uploadPreview.url) ? (
-                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-b from-gray-900 to-black">
-                          <PlayCircle className="w-12 h-12 text-white/70" />
-                        </div>
+                        <iframe
+                          src={getEmbedSrc(uploadPreview.url) || uploadPreview.url}
+                          className="w-full h-full"
+                          frameBorder="0"
+                          allowFullScreen
+                        />
                       ) : (
                         <img
                           src={uploadPreview.file ? uploadPreview.url : uploadPreview.url}

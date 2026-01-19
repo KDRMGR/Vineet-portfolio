@@ -33,7 +33,6 @@ export default function Navigation() {
   const navLinks = [
     { name: 'Home', href: '/' },
     { name: 'Photography', href: '/photography' },
-    { name: 'Cinematography', href: '/cinematography' },
     { name: 'About', href: '/about' },
     { name: 'Contact', href: '/contact' },
   ];

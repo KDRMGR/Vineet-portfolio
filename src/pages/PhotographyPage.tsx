@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { subscribeToCmsUpdates, supabase } from '../lib/supabase';
 import { Camera, Aperture, Heart, PlayCircle, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -62,7 +62,43 @@ export default function PhotographyPage() {
   const [activeCategory, setActiveCategory] = useState<{ slug: string; name: string } | null>(null);
   const [categoryImages, setCategoryImages] = useState<GalleryImage[]>([]);
   const [loadingCategoryImages, setLoadingCategoryImages] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const touchStartXRef = useRef<number | null>(null);
+  const touchEndXRef = useRef<number | null>(null);
+
+  const showNext = () => {
+    setSelectedIndex((prev) => {
+      if (prev === null) return prev;
+      if (!categoryImages.length) return prev;
+      return (prev + 1) % categoryImages.length;
+    });
+  };
+
+  const showPrev = () => {
+    setSelectedIndex((prev) => {
+      if (prev === null) return prev;
+      if (!categoryImages.length) return prev;
+      return (prev - 1 + categoryImages.length) % categoryImages.length;
+    });
+  };
+
+  useEffect(() => {
+    if (selectedIndex === null) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        showNext();
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        showPrev();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        setSelectedIndex(null);
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [selectedIndex, categoryImages.length]);
 
   const safeParseCategoryList = (raw: string | undefined) => {
     if (!raw) return null;
@@ -269,10 +305,10 @@ export default function PhotographyPage() {
               return (
                 <button
                   key={index}
-                  onClick={() => {
-                    setSelectedImage(null);
-                    setActiveCategory({ slug: category.slug, name: category.name });
-                  }}
+                    onClick={() => {
+                      setSelectedIndex(null);
+                      setActiveCategory({ slug: category.slug, name: category.name });
+                    }}
                   className="group relative overflow-hidden cursor-pointer transition-all duration-500 hover:scale-105"
                   type="button"
                 >
@@ -450,10 +486,10 @@ export default function PhotographyPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {categoryImages.map((img) => (
+                {categoryImages.map((img, index) => (
                   <button
                     key={img.id}
-                    onClick={() => setSelectedImage(img)}
+                    onClick={() => setSelectedIndex(index)}
                     className="border-2 border-gray-800 bg-black overflow-hidden group"
                     type="button"
                   >
@@ -480,23 +516,56 @@ export default function PhotographyPage() {
             )}
           </div>
 
-          {selectedImage && (
+          {selectedIndex !== null && categoryImages[selectedIndex] && (
             <div
               className="fixed inset-0 bg-black/95 z-[60] flex items-center justify-center p-4"
-              onClick={() => setSelectedImage(null)}
+              onClick={() => setSelectedIndex(null)}
+              onTouchStart={(e) => {
+                if (e.touches && e.touches.length > 0) {
+                  touchStartXRef.current = e.touches[0].clientX;
+                  touchEndXRef.current = null;
+                }
+              }}
+              onTouchMove={(e) => {
+                if (e.touches && e.touches.length > 0) {
+                  touchEndXRef.current = e.touches[0].clientX;
+                }
+              }}
+              onTouchEnd={() => {
+                if (touchStartXRef.current === null || touchEndXRef.current === null) return;
+                const diff = touchStartXRef.current - touchEndXRef.current;
+                const threshold = 50;
+                if (Math.abs(diff) > threshold) {
+                  if (diff > 0) {
+                    setSelectedIndex((prev) => {
+                      if (prev === null) return prev;
+                      if (!categoryImages.length) return prev;
+                      return (prev + 1) % categoryImages.length;
+                    });
+                  } else {
+                    setSelectedIndex((prev) => {
+                      if (prev === null) return prev;
+                      if (!categoryImages.length) return prev;
+                      return (prev - 1 + categoryImages.length) % categoryImages.length;
+                    });
+                  }
+                }
+                touchStartXRef.current = null;
+                touchEndXRef.current = null;
+              }}
             >
               <button
                 className="absolute top-8 right-8 text-white hover:text-[#ff8c42] transition-colors"
-                onClick={() => setSelectedImage(null)}
+                onClick={() => setSelectedIndex(null)}
                 type="button"
                 aria-label="Close preview"
               >
                 <X className="w-10 h-10" />
               </button>
               <div className="max-w-6xl w-full" onClick={(e) => e.stopPropagation()}>
-                {isVideoFile(selectedImage.image_url) ? (
+                {isVideoFile(categoryImages[selectedIndex].image_url) ? (
                   <video
-                    src={selectedImage.image_url}
+                    src={categoryImages[selectedIndex].image_url}
                     controls
                     autoPlay
                     playsInline
@@ -504,20 +573,22 @@ export default function PhotographyPage() {
                   />
                 ) : (
                   <img
-                    src={selectedImage.image_url}
-                    alt={selectedImage.title || activeCategory.name}
+                    src={categoryImages[selectedIndex].image_url}
+                    alt={categoryImages[selectedIndex].title || activeCategory.name}
                     className="w-full h-auto max-h-[85vh] object-contain"
                   />
                 )}
-                {(selectedImage.title || selectedImage.description) && (
+                {(categoryImages[selectedIndex].title || categoryImages[selectedIndex].description) && (
                   <div className="mt-6 text-center">
-                    {selectedImage.title && (
+                    {categoryImages[selectedIndex].title && (
                       <h3 className="text-3xl font-bold uppercase tracking-wider mb-2 text-[#ff8c42]">
-                        {selectedImage.title}
+                        {categoryImages[selectedIndex].title}
                       </h3>
                     )}
-                    {selectedImage.description && (
-                      <p className="text-lg text-gray-300">{selectedImage.description}</p>
+                    {categoryImages[selectedIndex].description && (
+                      <p className="text-lg text-gray-300">
+                        {categoryImages[selectedIndex].description}
+                      </p>
                     )}
                   </div>
                 )}

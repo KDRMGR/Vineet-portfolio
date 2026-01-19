@@ -9,7 +9,6 @@ const technicalSkills = [
 ];
 
 const visualSkills = [
-  'Cinematography',
   'Photography',
   'Photo Editing',
   'Video Editing',

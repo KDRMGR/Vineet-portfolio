@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { subscribeToCmsUpdates, supabase, LayoutType } from '../lib/supabase';
 import { ArrowLeft, PlayCircle, X } from 'lucide-react';
@@ -23,6 +23,7 @@ interface GallerySection {
   category: string;
   name: string;
   order_index: number;
+  image_url?: string;
 }
 
 const categoryTitles: Record<string, string> = {
@@ -32,13 +33,6 @@ const categoryTitles: Record<string, string> = {
   people: 'People & Places',
   nightlife: 'Nightlife',
   wedding: "Wedding & Others",
-  'cinematography-highlight-reels': 'Highlight Reels',
-  'cinematography-wedding-social-media': 'Wedding Social Media',
-  'cinematography-short-films': 'Short Films',
-  'cinematography-social-media-event-decor': 'Social Media Event Decor',
-  'cinematography-tata-marathon': 'Tata Marathon',
-  'cinematography-starbucks': 'Starbucks',
-  'cinematography-others': 'Others',
   commercial: 'Commercial',
   events: 'Events',
   documentary: 'Documentary',
@@ -52,8 +46,10 @@ export default function GalleryPage() {
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [sections, setSections] = useState<GallerySection[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [layoutType, setLayoutType] = useState<LayoutType>('grid');
+  const touchStartXRef = useRef<number | null>(null);
+  const touchEndXRef = useRef<number | null>(null);
 
   const stripQuery = (url: string) => {
     try {
@@ -149,6 +145,7 @@ export default function GalleryPage() {
       title: string | null;
       images: GalleryImage[];
       startIndex: number;
+      sectionImage?: string;
     }> = [];
 
     if (sections.length > 0) {
@@ -162,6 +159,7 @@ export default function GalleryPage() {
           title: section.name,
           images: sectionImages,
           startIndex,
+          sectionImage: section.image_url,
         });
         startIndex += sectionImages.length;
       }
@@ -290,9 +288,81 @@ export default function GalleryPage() {
   };
 
   const handleImageClick = (index: number) => {
-    const list = layoutType === 'grouped' ? groupedData?.orderedImages || [] : images;
-    setSelectedImage(list[index]);
+    setSelectedIndex(index);
   };
+
+  const getCurrentList = () =>
+    layoutType === 'grouped' ? groupedData?.orderedImages || [] : images;
+
+  const showNext = () => {
+    setSelectedIndex((prev) => {
+      if (prev === null) return prev;
+      const list = getCurrentList();
+      if (!list.length) return prev;
+      return (prev + 1) % list.length;
+    });
+  };
+
+  const showPrev = () => {
+    setSelectedIndex((prev) => {
+      if (prev === null) return prev;
+      const list = getCurrentList();
+      if (!list.length) return prev;
+      return (prev - 1 + list.length) % list.length;
+    });
+  };
+
+  const handleTouchStart = (e) => {
+    if (e.touches && e.touches.length > 0) {
+      touchStartXRef.current = e.touches[0].clientX;
+      touchEndXRef.current = null;
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    if (e.touches && e.touches.length > 0) {
+      touchEndXRef.current = e.touches[0].clientX;
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (touchStartXRef.current === null || touchEndXRef.current === null) return;
+    const diff = touchStartXRef.current - touchEndXRef.current;
+    const threshold = 50;
+    if (Math.abs(diff) > threshold) {
+      if (diff > 0) {
+        showNext();
+      } else {
+        showPrev();
+      }
+    }
+    touchStartXRef.current = null;
+    touchEndXRef.current = null;
+  };
+
+  useEffect(() => {
+    if (selectedIndex === null) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        showNext();
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        showPrev();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        setSelectedIndex(null);
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [selectedIndex, layoutType, images.length, groupedData?.orderedImages?.length]);
+
+  const currentList = getCurrentList();
+  const selectedImage =
+    selectedIndex !== null && selectedIndex >= 0 && selectedIndex < currentList.length
+      ? currentList[selectedIndex]
+      : null;
 
   if (loading) {
     return (
@@ -337,32 +407,43 @@ export default function GalleryPage() {
                     className="group relative overflow-hidden cursor-pointer transition-all duration-500 hover:scale-105 border-2 border-gray-800"
                   >
                     <div className="aspect-[4/3] relative overflow-hidden bg-gray-900">
-                      {g.images[0]?.image_url ? (
-                        isVideoFile(g.images[0].image_url) ? (
-                          <video
-                            src={g.images[0].image_url}
-                            className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
-                            muted
-                            loop
-                            playsInline
-                            autoPlay
-                            preload="metadata"
-                          />
-                        ) : isEmbeddableUrl(g.images[0].image_url) ? (
-                          <div className="w-full h-full bg-gradient-to-b from-gray-900 to-black flex items-center justify-center transition-all duration-700 group-hover:scale-110">
-                            <PlayCircle className="w-16 h-16 text-white/80" />
-                          </div>
-                        ) : (
+                      {(() => {
+                        const displayUrl = g.sectionImage || g.images[0]?.image_url;
+                        if (!displayUrl) {
+                          return <div className="w-full h-full bg-gradient-to-b from-gray-900 to-black" />;
+                        }
+
+                        if (isVideoFile(displayUrl)) {
+                          return (
+                            <video
+                              src={displayUrl}
+                              className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
+                              muted
+                              loop
+                              playsInline
+                              autoPlay
+                              preload="metadata"
+                            />
+                          );
+                        }
+
+                        if (isEmbeddableUrl(displayUrl)) {
+                          return (
+                            <div className="w-full h-full bg-gradient-to-b from-gray-900 to-black flex items-center justify-center transition-all duration-700 group-hover:scale-110">
+                              <PlayCircle className="w-16 h-16 text-white/80" />
+                            </div>
+                          );
+                        }
+
+                        return (
                           <img
-                            src={g.images[0].image_url}
+                            src={displayUrl}
                             alt={g.title || ''}
                             className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
                             loading="lazy"
                           />
-                        )
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-b from-gray-900 to-black" />
-                      )}
+                        );
+                      })()}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
                       <div className="absolute bottom-0 left-0 right-0 p-6">
                         <div className="flex items-center gap-3">
@@ -398,16 +479,41 @@ export default function GalleryPage() {
       {selectedImage && (
         <div
           className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4"
-          onClick={() => setSelectedImage(null)}
+          onClick={() => setSelectedIndex(null)}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
         >
           <button
             className="absolute top-8 right-8 text-white hover:text-[#ff8c42] transition-colors"
             onClick={(e) => {
               e.stopPropagation();
-              setSelectedImage(null);
+              setSelectedIndex(null);
             }}
           >
             <X className="w-10 h-10" />
+          </button>
+          <button
+            type="button"
+            className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 text-white hover:text-[#ff8c42] transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              showPrev();
+            }}
+            aria-label="Previous image"
+          >
+            <ArrowLeft className="w-10 h-10" />
+          </button>
+          <button
+            type="button"
+            className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 text-white hover:text-[#ff8c42] transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              showNext();
+            }}
+            aria-label="Next image"
+          >
+            <ArrowLeft className="w-10 h-10 rotate-180" />
           </button>
           <div className="max-w-6xl w-full" onClick={(e) => e.stopPropagation()}>
             {isVideoFile(selectedImage.image_url) ? (

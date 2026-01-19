@@ -4,7 +4,6 @@ import Navigation from './components/Navigation';
 import ProtectedRoute from './components/ProtectedRoute';
 import HomePage from './pages/HomePage';
 import AboutPage from './pages/AboutPage';
-import CinematographyPage from './pages/CinematographyPage';
 import PhotographyPage from './pages/PhotographyPage';
 import ContactPage from './pages/ContactPage';
 import GalleryPage from './pages/GalleryPage';
@@ -21,7 +20,6 @@ function AppContent() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/about" element={<AboutPage />} />
-        <Route path="/cinematography" element={<CinematographyPage />} />
         <Route path="/photography" element={<PhotographyPage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/gallery/:category" element={<GalleryPage />} />
