@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, LayoutType, publishCmsUpdate } from '../lib/supabase';
 import { getEmbedSrc, isEmbeddableUrl, isVideoUrl } from '../lib/media';
-import { LogOut, Trash2, Plus, Image as ImageIcon, Layout, Save, Eye, Pencil, ArrowUp, ArrowDown, PlayCircle } from 'lucide-react';
+import { LogOut, Trash2, Plus, Image as ImageIcon, Layout, Save, Eye, Pencil, ArrowUp, ArrowDown, PlayCircle, Tag, CheckSquare, Square, X } from 'lucide-react';
 
 interface ContentItem {
   id: string;
@@ -91,16 +91,13 @@ export default function AdminDashboard() {
   const [aboutUploadDraft, setAboutUploadDraft] = useState({ file: null as File | null, url: '' });
   const [hasUnsavedAboutImages, setHasUnsavedAboutImages] = useState(false);
   const [isSavingAboutImages, setIsSavingAboutImages] = useState(false);
+  const [selectedImageIds, setSelectedImageIds] = useState<Set<string>>(new Set());
+  const [tagFilter, setTagFilter] = useState<string>('');
+  const [bulkSectionId, setBulkSectionId] = useState<string>('');
+  const [bulkAddTagsText, setBulkAddTagsText] = useState<string>('');
+  const [bulkRemoveTagsText, setBulkRemoveTagsText] = useState<string>('');
 
   const ABOUT_IMAGES_CATEGORY = 'about-image';
-
-  const stripQuery = (url: string) => {
-    try {
-      return new URL(url).pathname;
-    } catch {
-      return url.split('?')[0] || url;
-    }
-  };
 
   const parseTagsText = (text: string) => {
     const tags = text
@@ -404,6 +401,7 @@ export default function AdminDashboard() {
     if (!error && data) {
       setGalleryImages(data);
       setGalleryDraft(data);
+      setSelectedImageIds(new Set());
     }
   };
 
@@ -1004,6 +1002,7 @@ export default function AdminDashboard() {
       showToast('success', 'Changes saved successfully');
       publishCmsUpdate();
       setHasUnsavedChanges(false);
+      setSelectedImageIds(new Set());
       fetchGalleryImages();
       fetchGalleryLayout();
       fetchContent();
@@ -1068,6 +1067,73 @@ export default function AdminDashboard() {
     acc[item.section].push(item);
     return acc;
   }, {} as Record<string, ContentItem[]>);
+
+  const availableTags = Array.from(
+    new Set(
+      galleryDraft.flatMap((img) => (img.tags || []).map((t) => t.trim()).filter(Boolean))
+    )
+  ).sort((a, b) => a.localeCompare(b));
+
+  const filteredGalleryDraft = tagFilter
+    ? galleryDraft.filter((img) =>
+        (img.tags || []).some((t) => t.toLowerCase() === tagFilter.toLowerCase())
+      )
+    : galleryDraft;
+
+  const toggleSelectImage = (id: string) => {
+    setSelectedImageIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const selectAllVisible = () => {
+    setSelectedImageIds(new Set(filteredGalleryDraft.map((img) => img.id)));
+  };
+
+  const clearSelection = () => {
+    setSelectedImageIds(new Set());
+  };
+
+  const bulkAssignSection = (sectionId: string | null) => {
+    if (selectedImageIds.size === 0) return;
+    setGalleryDraft((prev) =>
+      prev.map((img) =>
+        selectedImageIds.has(img.id) ? { ...img, section_id: sectionId } : img
+      )
+    );
+    setHasUnsavedChanges(true);
+  };
+
+  const bulkAddTags = (tagsText: string) => {
+    const tags = parseTagsText(tagsText) || [];
+    if (tags.length === 0 || selectedImageIds.size === 0) return;
+    setGalleryDraft((prev) =>
+      prev.map((img) => {
+        if (!selectedImageIds.has(img.id)) return img;
+        const current = img.tags || [];
+        const merged = Array.from(new Set([...current, ...tags]));
+        return { ...img, tags: merged };
+      })
+    );
+    setHasUnsavedChanges(true);
+  };
+
+  const bulkRemoveTags = (tagsText: string) => {
+    const tags = parseTagsText(tagsText) || [];
+    if (tags.length === 0 || selectedImageIds.size === 0) return;
+    const removeSet = new Set(tags.map((t) => t.toLowerCase()));
+    setGalleryDraft((prev) =>
+      prev.map((img) => {
+        if (!selectedImageIds.has(img.id)) return img;
+        const nextTags = (img.tags || []).filter((t) => !removeSet.has(t.toLowerCase()));
+        return { ...img, tags: nextTags.length ? nextTags : null };
+      })
+    );
+    setHasUnsavedChanges(true);
+  };
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
@@ -1885,6 +1951,102 @@ export default function AdminDashboard() {
                   <Plus className="w-5 h-5" />
                   Add URL
                 </button>
+                <div className="flex items-center gap-3 px-4 py-3 border-2 border-gray-700">
+                  <Tag className="w-4 h-4 text-gray-400" />
+                  <select
+                    value={tagFilter}
+                    onChange={(e) => setTagFilter(e.target.value)}
+                    className="bg-transparent outline-none"
+                  >
+                    <option value="" className="bg-gray-900">All tags</option>
+                    {availableTags.map((t) => (
+                      <option key={t} value={t} className="bg-gray-900">
+                        {t}
+                      </option>
+                    ))}
+                  </select>
+                  {tagFilter && (
+                    <button
+                      type="button"
+                      onClick={() => setTagFilter('')}
+                      className="text-gray-400 hover:text-white"
+                      aria-label="Clear tag filter"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                <div className="flex items-center gap-3 px-4 py-3 border-2 border-gray-700">
+                  <span className="uppercase text-sm text-gray-400">Selected: {selectedImageIds.size}</span>
+                  <button
+                    type="button"
+                    onClick={selectAllVisible}
+                    className="px-3 py-1 border-2 border-gray-700 hover:border-[#ff8c42] uppercase text-xs"
+                  >
+                    Select All
+                  </button>
+                  <button
+                    type="button"
+                    onClick={clearSelection}
+                    className="px-3 py-1 border-2 border-gray-700 hover:border-[#ff8c42] uppercase text-xs"
+                  >
+                    Clear
+                  </button>
+                </div>
+                <div className="flex flex-wrap items-center gap-3 px-4 py-3 border-2 border-gray-700">
+                  <span className="uppercase text-sm text-gray-400">Bulk</span>
+                  <select
+                    value={bulkSectionId}
+                    onChange={(e) => setBulkSectionId(e.target.value)}
+                    className="px-2 py-1 bg-transparent border-2 border-gray-700"
+                  >
+                    <option value="">No Section</option>
+                    {gallerySections.map((s) => (
+                      <option key={s.id} value={s.id} className="bg-gray-900">{s.name}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => bulkAssignSection(bulkSectionId.trim() ? bulkSectionId.trim() : null)}
+                    className="px-3 py-1 border-2 border-gray-700 hover:border-[#ff8c42] uppercase text-xs"
+                  >
+                    Apply Section
+                  </button>
+                  <input
+                    type="text"
+                    placeholder="Add tags (comma)"
+                    value={bulkAddTagsText}
+                    onChange={(e) => setBulkAddTagsText(e.target.value)}
+                    className="px-2 py-1 bg-transparent border-2 border-gray-700 w-48"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      bulkAddTags(bulkAddTagsText);
+                      setBulkAddTagsText('');
+                    }}
+                    className="px-3 py-1 border-2 border-gray-700 hover:border-[#ff8c42] uppercase text-xs"
+                  >
+                    Add Tags
+                  </button>
+                  <input
+                    type="text"
+                    placeholder="Remove tags (comma)"
+                    value={bulkRemoveTagsText}
+                    onChange={(e) => setBulkRemoveTagsText(e.target.value)}
+                    className="px-2 py-1 bg-transparent border-2 border-gray-700 w-48"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      bulkRemoveTags(bulkRemoveTagsText);
+                      setBulkRemoveTagsText('');
+                    }}
+                    className="px-3 py-1 border-2 border-gray-700 hover:border-[#ff8c42] uppercase text-xs"
+                  >
+                    Remove Tags
+                  </button>
+                </div>
                 <button
                   onClick={saveGalleryChanges}
                   disabled={isSaving || !hasUnsavedChanges}
@@ -1938,7 +2100,7 @@ export default function AdminDashboard() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {galleryDraft.map((image) => (
+              {filteredGalleryDraft.map((image) => (
                 <div
                   key={image.id}
                   draggable
@@ -1965,6 +2127,19 @@ export default function AdminDashboard() {
                     </div>
                     <div className="flex gap-2">
                       <button
+                        onClick={() => toggleSelectImage(image.id)}
+                        className="px-3 py-2 border-2 border-gray-700 text-gray-300 hover:border-[#ff8c42] hover:text-[#ff8c42] transition-all"
+                        aria-label="Select image"
+                        type="button"
+                        title={selectedImageIds.has(image.id) ? 'Deselect' : 'Select'}
+                      >
+                        {selectedImageIds.has(image.id) ? (
+                          <CheckSquare className="w-4 h-4" />
+                        ) : (
+                          <Square className="w-4 h-4" />
+                        )}
+                      </button>
+                      <button
                         onClick={() => moveGalleryItem(image.id, -1)}
                         disabled={image.order_index === 0}
                         className="px-3 py-2 border-2 border-gray-700 text-gray-300 hover:border-[#ff8c42] hover:text-[#ff8c42] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
@@ -1985,6 +2160,11 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                   <div className="aspect-video relative overflow-hidden mb-4 bg-gray-900">
+                    {selectedImageIds.has(image.id) && (
+                      <div className="absolute top-2 left-2 z-10 bg-black/60 p-1 rounded">
+                        <CheckSquare className="w-5 h-5 text-[#ff8c42]" />
+                      </div>
+                    )}
                     {isVideoUrl(image.image_url) ? (
                       <video
                         src={image.image_url}
@@ -2019,6 +2199,12 @@ export default function AdminDashboard() {
                       <span className="font-semibold">Description:</span>{' '}
                       {image.description || 'N/A'}
                     </p>
+                    {(image.tags && image.tags.length > 0) && (
+                      <p className="text-xs text-gray-500">
+                        <span className="font-semibold uppercase tracking-wider">Tags:</span>{' '}
+                        {image.tags.join(', ')}
+                      </p>
+                    )}
                     <button
                       onClick={() => openImageEditor(image.id)}
                       className="w-full flex items-center justify-center gap-2 px-4 py-2 border-2 border-gray-600 text-gray-300 hover:border-[#ff8c42] hover:text-[#ff8c42] transition-all"
@@ -2038,7 +2224,7 @@ export default function AdminDashboard() {
               ))}
             </div>
 
-            {galleryDraft.length === 0 && (
+            {filteredGalleryDraft.length === 0 && (
               <div className="text-center py-20">
                 <ImageIcon className="w-16 h-16 mx-auto mb-4 text-gray-700" />
                 <p className="text-gray-500 uppercase tracking-wider">

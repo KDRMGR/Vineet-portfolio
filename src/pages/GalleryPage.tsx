@@ -128,7 +128,7 @@ export default function GalleryPage() {
     return null;
   };
 
-  const isEmbeddableUrl = (url: string) => Boolean(getEmbedUrl(url));
+  // const isEmbeddableUrl = (url: string) => Boolean(getEmbedUrl(url));
 
   const slugify = (value: string) =>
     value
@@ -312,14 +312,14 @@ export default function GalleryPage() {
     });
   };
 
-  const handleTouchStart = (e) => {
+  const handleTouchStart = (e: React.TouchEvent) => {
     if (e.touches && e.touches.length > 0) {
       touchStartXRef.current = e.touches[0].clientX;
       touchEndXRef.current = null;
     }
   };
 
-  const handleTouchMove = (e) => {
+  const handleTouchMove = (e: React.TouchEvent) => {
     if (e.touches && e.touches.length > 0) {
       touchEndXRef.current = e.touches[0].clientX;
     }
@@ -393,10 +393,11 @@ export default function GalleryPage() {
               {groupedData.groups
                 .filter((g) => g.title)
                 .map((g) => (
-                  <button
+                  <a
                     key={g.id}
-                    type="button"
-                    onClick={() => {
+                    href={`#${g.id}`}
+                    onClick={(e) => {
+                      e.preventDefault();
                       const el = document.getElementById(g.id);
                       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                       const nextHash = `#${g.id}`;
@@ -412,7 +413,6 @@ export default function GalleryPage() {
                         if (!displayUrl) {
                           return <div className="w-full h-full bg-gradient-to-b from-gray-900 to-black" />;
                         }
-
                         if (isVideoFile(displayUrl)) {
                           return (
                             <video
@@ -426,15 +426,13 @@ export default function GalleryPage() {
                             />
                           );
                         }
-
-                        if (isEmbeddableUrl(displayUrl)) {
+                        if (getEmbedUrl(displayUrl)) {
                           return (
                             <div className="w-full h-full bg-gradient-to-b from-gray-900 to-black flex items-center justify-center transition-all duration-700 group-hover:scale-110">
                               <PlayCircle className="w-16 h-16 text-white/80" />
                             </div>
                           );
                         }
-
                         return (
                           <img
                             src={displayUrl}
@@ -454,7 +452,7 @@ export default function GalleryPage() {
                         </div>
                       </div>
                     </div>
-                  </button>
+                  </a>
                 ))}
             </div>
           </div>

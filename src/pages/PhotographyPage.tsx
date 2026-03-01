@@ -442,7 +442,7 @@ export default function PhotographyPage() {
           className="fixed inset-0 bg-black/95 z-50 flex items-start justify-center p-4 overflow-y-auto"
           onClick={() => {
             setActiveCategory(null);
-            setSelectedImage(null);
+            setSelectedIndex(null);
             setCategoryImages([]);
           }}
         >
@@ -464,7 +464,7 @@ export default function PhotographyPage() {
                 <button
                   onClick={() => {
                     setActiveCategory(null);
-                    setSelectedImage(null);
+                    setSelectedIndex(null);
                     setCategoryImages([]);
                   }}
                   className="p-3 border-2 border-gray-600 text-gray-300 hover:border-[#ff8c42] hover:text-[#ff8c42] transition-all"

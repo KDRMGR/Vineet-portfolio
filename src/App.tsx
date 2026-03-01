@@ -23,6 +23,7 @@ function AppContent() {
         <Route path="/photography" element={<PhotographyPage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/gallery/:category" element={<GalleryPage />} />
+        <Route path="/admin/login" element={<LoginPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route
           path="/admin"
